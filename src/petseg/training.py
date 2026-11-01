@@ -60,8 +60,10 @@ def load_config(path):
         raise ValueError("size must be >=64 and lr >0")
     if config.get("optimizer", "adamw") not in {"adamw", "sgd"}:
         raise ValueError("optimizer must be adamw or sgd")
-    if config.get("scheduler", "cosine") not in {"cosine", "none"}:
-        raise ValueError("scheduler must be cosine or none")
+    if config.get("scheduler", "cosine") not in {"cosine", "plateau", "none"}:
+        raise ValueError("scheduler must be cosine, plateau or none")
+    if not 0 < config.get("encoder_lr_multiplier", 1) <= 1:
+        raise ValueError("encoder_lr_multiplier must lie in (0,1]")
     return config
 
 
@@ -70,6 +72,46 @@ def save_checkpoint(path, payload):
     tmp = path.with_suffix(".tmp")
     torch.save(payload, tmp)
     os.replace(tmp, path)
+
+
+def initialize_model(config, fingerprint):
+    """Warm-start weights only; each fine-tuning stage has its own optimizer/schedule."""
+    source = config.get("init_checkpoint")
+    model = build_model(config, initialize=not bool(source))
+    provenance = None
+    if source:
+        checkpoint = torch.load(source, map_location="cpu", weights_only=True)
+        if checkpoint["contract_hash"] != fingerprint:
+            raise ValueError(
+                "Initial checkpoint has a different split/statistics contract"
+            )
+        if checkpoint["config"]["model"] != config["model"]:
+            raise ValueError("Initial checkpoint has a different model architecture")
+        model.load_state_dict(checkpoint["model"], strict=True)
+        provenance = {
+            "path": str(source),
+            "sha256": file_hash(source),
+            "epoch": checkpoint["epoch"],
+        }
+    return model, provenance
+
+
+def parameter_groups(model, config):
+    multiplier = config.get("encoder_lr_multiplier", 1)
+    if config["model"] != "pretrained" or multiplier == 1:
+        return [{"params": list(model.parameters()), "lr": config["lr"], "name": "all"}]
+    encoder, decoder = [], []
+    for name, parameter in model.named_parameters():
+        group = (
+            encoder
+            if name.startswith(("stem.", "layer1.", "layer2.", "layer3.", "layer4."))
+            else decoder
+        )
+        group.append(parameter)
+    return [
+        {"params": encoder, "lr": config["lr"] * multiplier, "name": "encoder"},
+        {"params": decoder, "lr": config["lr"], "name": "decoder"},
+    ]
 
 
 def train(config_path, output):
@@ -86,7 +128,8 @@ def train(config_path, output):
     fingerprint = validate_splits(config["data_root"], config["manifests"])
     stats = json.loads((Path(config["manifests"]) / "stats.json").read_text())
     device = device_for(config.get("device", "auto"))
-    model = build_model(config).to(device)
+    model, initialization = initialize_model(config, fingerprint)
+    model.to(device)
     sets = {
         split: PetDataset(
             config["data_root"],
@@ -112,22 +155,32 @@ def train(config_path, output):
     }
     if config.get("optimizer", "adamw") == "adamw":
         optimizer = torch.optim.AdamW(
-            model.parameters(),
+            parameter_groups(model, config),
             lr=config["lr"],
             weight_decay=config.get("weight_decay", 1e-4),
         )
     else:
         optimizer = torch.optim.SGD(
-            model.parameters(),
+            parameter_groups(model, config),
             lr=config["lr"],
             momentum=0.9,
             weight_decay=config.get("weight_decay", 1e-4),
         )
-    scheduler = (
-        torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config["epochs"])
-        if config.get("scheduler", "cosine") == "cosine"
-        else None
-    )
+    schedule = config.get("scheduler", "cosine")
+    if schedule == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=config["epochs"]
+        )
+    elif schedule == "plateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="max",
+            factor=0.5,
+            patience=config.get("lr_patience", 2),
+            min_lr=config.get("min_lr", 1e-6),
+        )
+    else:
+        scheduler = None
     amp = config.get("amp", True) and device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=amp)
     output.mkdir(parents=True, exist_ok=True)
@@ -137,7 +190,11 @@ def train(config_path, output):
     history = []
     for epoch in range(config["epochs"]):
         sets["train"].epoch = epoch
-        row = {"epoch": epoch + 1, "lr": optimizer.param_groups[0]["lr"]}
+        row = {
+            "epoch": epoch + 1,
+            "lr": max(g["lr"] for g in optimizer.param_groups),
+            "group_lrs": {g["name"]: g["lr"] for g in optimizer.param_groups},
+        }
         for split in ("train", "val"):
             model.train(split == "train")
             # Freeze running BN statistics for batch-size-one pretrained experiments.
@@ -170,7 +227,10 @@ def train(config_path, output):
                         flush=True,
                     )
                 if split == "val":
-                    for p, t, v in zip(logits.detach().sigmoid(), y, valid):
+                    # One batched transfer avoids many tiny accelerator synchronizations.
+                    for p, t, v in zip(
+                        logits.detach().sigmoid().cpu(), batch["target"], batch["valid"]
+                    ):
                         score = region_metrics(p, t, v)["iou"]
                         if score is not None:
                             scores.append(score)
@@ -181,7 +241,9 @@ def train(config_path, output):
                         "Validation has no valid pixels; cannot select a checkpoint"
                     )
                 row["val_iou"] = float(np.mean(scores))
-        if scheduler:
+        if schedule == "plateau":
+            scheduler.step(row["val_iou"])
+        elif scheduler:
             scheduler.step()
         improved = row["val_iou"] > best
         if improved:
@@ -200,6 +262,7 @@ def train(config_path, output):
             "val_iou": row["val_iou"],
             "threshold": 0.5,
             "version": "petseg-0.1.0",
+            "initialization": initialization,
         }
         save_checkpoint(output / "last.pt", payload)
         if improved:

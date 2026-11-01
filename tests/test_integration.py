@@ -114,3 +114,18 @@ def test_prediction_inverse_letterbox(trained):
     ys, xs = np.where(mask > 0)
     assert abs(xs.min() - 50) < 4 and abs(xs.max() - 149) < 4
     assert abs(ys.min() - 28) < 4 and abs(ys.max() - 71) < 4
+
+
+def test_warm_start_preserves_weights_and_contract(trained):
+    import torch
+    from petseg.training import initialize_model
+
+    _, _, path = trained
+    checkpoint = torch.load(path, weights_only=True)
+    config = {**checkpoint["config"], "init_checkpoint": str(path), "size": 96}
+    model, source = initialize_model(config, checkpoint["contract_hash"])
+    assert source["sha256"] and source["epoch"] == 1
+    for key, value in model.state_dict().items():
+        assert torch.equal(value, checkpoint["model"][key])
+    with pytest.raises(ValueError, match="contract"):
+        initialize_model(config, "wrong-contract")

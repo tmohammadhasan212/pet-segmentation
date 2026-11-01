@@ -1,0 +1,21 @@
+# Higher-resolution refinement, initialized from validation-selected 256px weights.
+model: pretrained
+loss: combined
+init_checkpoint: runs/accuracy/finetune-256/best.pt
+data_root: data/oxford-pets
+manifests: data/manifests
+size: 384
+seed: 42
+batch_size: 4
+epochs: 8
+patience: 4
+optimizer: adamw
+lr: 0.00005
+encoder_lr_multiplier: 0.2
+weight_decay: 0.0001
+scheduler: cosine
+augment: true
+amp: false
+device: mps
+workers: 0
+threads: 4

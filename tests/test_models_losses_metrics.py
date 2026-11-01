@@ -71,3 +71,17 @@ def test_half_precision_large_mask_reductions_are_finite(kind):
     assert loss.dtype == torch.float32 and torch.isfinite(loss)
     loss.backward()
     assert torch.isfinite(logits.grad).all()
+
+
+def test_encoder_learning_rate_groups_cover_every_parameter_once():
+    from petseg.training import parameter_groups
+
+    model = ResNetUNet(pretrained=False)
+    groups = parameter_groups(
+        model, {"model": "pretrained", "lr": 0.001, "encoder_lr_multiplier": 0.2}
+    )
+    assert [g["lr"] for g in groups] == [0.0002, 0.001]
+    ids = [id(p) for g in groups for p in g["params"]]
+    assert len(ids) == len(set(ids)) == len(list(model.parameters()))
+    assert id(model.stem[0].weight) in {id(p) for p in groups[0]["params"]}
+    assert id(model.head.weight) in {id(p) for p in groups[1]["params"]}

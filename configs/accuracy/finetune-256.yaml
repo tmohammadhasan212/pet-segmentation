@@ -1,0 +1,23 @@
+# Validation-driven fine-tuning; published test results never choose these settings.
+model: pretrained
+loss: combined
+init_checkpoint: runs/pilot/pretrained-combined/best.pt
+data_root: data/oxford-pets
+manifests: data/manifests
+size: 256
+seed: 42
+batch_size: 8
+epochs: 30
+patience: 6
+optimizer: adamw
+lr: 0.0003
+encoder_lr_multiplier: 0.2
+weight_decay: 0.0001
+scheduler: plateau
+lr_patience: 2
+min_lr: 0.000001
+augment: true
+amp: false
+device: mps
+workers: 0
+threads: 4
