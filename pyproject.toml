@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "petseg"
+version = "0.1.0"
+description = "Reproducible Oxford-IIIT Pet segmentation and background removal"
+requires-python = ">=3.11.8,<3.14"
+dependencies = [
+  "torch==2.9.0", "torchvision==0.24.0", "numpy==2.3.4",
+  "Pillow==11.3.0", "PyYAML==6.0.3", "gradio==5.49.1", "matplotlib==3.10.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==8.4.2"]
+
+[project.scripts]
+petseg = "petseg.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,0 +1,19 @@
+# Full experiment; all variants share the same manifests and preprocessing.
+model: pretrained
+loss: bce
+base_channels: 32
+data_root: data/oxford-pets
+manifests: data/manifests
+size: 256
+seed: 42
+batch_size: 8
+epochs: 60
+patience: 10
+optimizer: adamw
+lr: 0.0003
+weight_decay: 0.0001
+scheduler: cosine
+augment: true
+amp: true
+device: auto
+workers: 0

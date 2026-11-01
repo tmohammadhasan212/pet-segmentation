@@ -1,0 +1,20 @@
+# One-epoch CPU pilot; not a converged benchmark.
+model: scratch
+loss: combined
+base_channels: 16
+data_root: data/oxford-pets
+manifests: data/manifests
+size: 128
+seed: 42
+batch_size: 8
+epochs: 1
+patience: 1
+optimizer: adamw
+lr: 0.0003
+weight_decay: 0.0001
+scheduler: cosine
+augment: true
+amp: true
+device: cpu
+workers: 0
+threads: 4
