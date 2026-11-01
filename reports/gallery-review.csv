@@ -1,0 +1,21 @@
+id,fur,tail,multiple_pets,similar_background,small_object,motion_blur,annotation_includes_all_animals,notes
+samoyed_7,1,0,0,0,0,not identified,single visible pet annotated,Fine flyaway fur and broad ignored contour against blue sky.
+pomeranian_93,1,0,0,0,0,not identified,single visible pet annotated,Spiky fur near the top of the silhouette; face occupies much of frame.
+wheaten_terrier_28,1,0,0,0,0,not identified,single visible pet annotated,Long facial fur and bright window background; body extends beyond frame.
+Maine_Coon_68,1,0,0,0,0,not identified,single visible pet annotated,Whiskers and long cheek fur; tight portrait crop.
+Egyptian_Mau_99,0,1,0,0,0,not identified,single visible pet annotated,Long thin tail on white background; foreground occupies a shallow horizontal band.
+Egyptian_Mau_31,0,1,0,0,0,not identified,single visible pet annotated,Tail extends to the lower-right image edge; ignored border covers thin portions.
+beagle_71,0,1,0,0,0,not identified,single visible pet annotated,Thin legs and raised curved tail; full-body side view.
+american_bulldog_68,0,1,1,0,1,not identified,no; partial secondary animal excluded,A second animal is partially visible as legs at the upper right. Its pixels are background; only the central dog is labeled.
+staffordshire_bull_terrier_65,0,0,0,1,0,not identified,single visible pet annotated,Brown sleeping dog on similar brown textured sofa; head is low and body horizontal.
+British_Shorthair_53,0,0,0,1,0,not identified,single visible pet annotated,Light grey kitten against pale grey background.
+shiba_inu_84,0,0,0,0,1,not identified,single visible pet annotated,Small full-body dog in a large landscape; ignore band is large relative to legs.
+basset_hound_197,0,0,0,0,1,not identified,single visible pet annotated,Small dog in snowy fisheye scene; strong lens distortion and large background.
+chihuahua_82,0,1,0,0,1,not identified,single visible pet annotated,"Overhead perspective, narrow body and tail against a similarly warm floor."
+japanese_chin_22,0,0,0,0,0,possible,single visible pet annotated,Soft low-detail image with blurred edges; motion versus focus cannot be determined from image alone.
+english_cocker_spaniel_61,1,0,0,0,0,possible,single visible pet annotated,"Running pose and soft paw/fur edges; representative possible motion blur, not a verified capture cause."
+scottish_terrier_6,1,0,0,0,0,not identified,single visible pet annotated,Long facial fur and narrow legs against detailed outdoor background.
+Sphynx_228,0,1,0,0,0,not identified,single visible pet annotated,Thin legs and tail against plants and bench; elongated horizontal body.
+Bombay_71,0,0,0,1,0,not identified,single visible pet annotated,Dark cat in shadow behind a table leg; one detached visible body region is included in foreground.
+saint_bernard_24,0,0,0,1,0,not identified,single visible pet annotated,Large dog partly occluded by dark sofa; room and TV are background.
+keeshond_69,1,0,0,0,0,not identified,single visible pet annotated,Long facial fur against pavement; body cropped by frame.

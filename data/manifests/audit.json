@@ -1,0 +1,14 @@
+{
+  "pairs": 7349,
+  "pixel_counts": {
+    "1": 380050806,
+    "2": 758472669,
+    "3": 149081782
+  },
+  "mapping": {
+    "1": "foreground",
+    "2": "background",
+    "3": "ignored border"
+  },
+  "annotation_readme_sha256": "e31ae5da0d657c614e055a08c2045c4d49f770f41361321f017ddf15df7ebcd6"
+}

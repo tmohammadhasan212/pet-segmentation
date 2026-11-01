@@ -1,0 +1,4 @@
+* text=auto
+*.csv text eol=lf
+# Preserve the upstream annotation README verbatim as provenance.
+data/manifests/annotation-source.txt -text -whitespace

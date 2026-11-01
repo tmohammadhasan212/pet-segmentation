@@ -1,0 +1,15 @@
+{
+  "dataset": "Oxford-IIIT Pet",
+  "source": "https://www.robots.ox.ac.uk/~vgg/data/pets/",
+  "retrieval_date": "2026-11-01",
+  "download_mirror": "https://huggingface.co/datasets/choisw0823/datasets/tree/main/oxford_pets",
+  "images_md5_verified": "5c4f3ee8e5d25df40f4fd59a7f44e54c",
+  "annotations_md5_verified": "95a8c909bbe2e81eed6a22bccdf3f68f",
+  "checksum_reference": "https://docs.pytorch.org/vision/0.24/_modules/torchvision/datasets/oxford_iiit_pet.html",
+  "official_pairs_audited": 7349,
+  "train_count": 2944,
+  "val_count": 736,
+  "test_count": 3669,
+  "contract_sha256": "0b081f28c49e40420d0bc739ec591819239966df60104055faef00e090e26a69",
+  "imagenet_encoder_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec"
+}
