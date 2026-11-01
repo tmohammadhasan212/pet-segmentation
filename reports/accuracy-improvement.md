@@ -61,3 +61,9 @@ scores are computed on original trimaps after undoing letterbox padding, with
 all ambiguous border pixels excluded. The comparison code rejects mixing native
 scores with the earlier model-input-grid results. Native boundary F1 uses a
 two-original-pixel tolerance and remains separate from region metrics.
+
+Regenerate the learning curves from the recorded stage histories:
+
+```bash
+python scripts/plot_training.py runs/accuracy/finetune-256 runs/accuracy/refine-384 --output reports/generated/accuracy/training.png
+```
