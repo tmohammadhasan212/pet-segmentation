@@ -1,0 +1,47 @@
+{
+  "status": "paused at user request before system shutdown",
+  "date": "2026-11-01",
+  "timezone": "Asia/Tehran",
+  "completed_epochs": 14,
+  "interrupted_epoch": 15,
+  "best_epoch": 14,
+  "best_validation_iou": 0.9561734281428408,
+  "metric_space": "256px model-input grid; NOT original-resolution test result",
+  "last_completed_epoch": {
+    "epoch": 14,
+    "lr": 0.00015,
+    "group_lrs": {
+      "encoder": 2.9999999999999997e-05,
+      "decoder": 0.00015
+    },
+    "train_loss": 0.029302835598608235,
+    "val_loss": 0.0397806953912115,
+    "val_iou": 0.9561734281428408
+  },
+  "checkpoints": {
+    "best": {
+      "path": "runs/accuracy/finetune-256/best.pt",
+      "sha256": "80a2bcfc2b0319518e8ade575091b1c2afad758b08289b300fdf01c5c35334f7",
+      "bytes": 172458713
+    },
+    "last": {
+      "path": "runs/accuracy/finetune-256/last.pt",
+      "sha256": "57a71b7f8bde313abdac6bc90bf7d6e1df61f683e75c4d8d788fcd866edefbc8",
+      "bytes": 172458713
+    }
+  },
+  "source_pilot_checkpoint": "runs/pilot/pretrained-combined/best.pt",
+  "source_pilot_sha256": "070175584262af20e4b6039a6161ed6e40b05864c2c494f06caf7d991a2f71c5",
+  "split_contract_sha256": "0b081f28c49e40420d0bc739ec591819239966df60104055faef00e090e26a69",
+  "remaining": [
+    "Resume remaining 256px training with optimizer/scheduler state",
+    "384px refinement",
+    "Validation-only native-grid inference calibration",
+    "Select model on validation, then common-native-grid pilot/test comparison",
+    "Update demo, examples, report and commit results"
+  ],
+  "training_process_stopped": true,
+  "demo_process_stopped": true,
+  "test_evaluation_for_new_models_performed": false,
+  "test_count": 32
+}

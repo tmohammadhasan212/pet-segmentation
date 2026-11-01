@@ -1,5 +1,10 @@
 # Accuracy improvement study
 
+**Paused 2026-11-01 at the user's request:** 14 completed 256px epochs; best
+validation IoU 0.95617. Epoch fifteen was interrupted. No new-model test results
+exist yet. See [the saved progress report](../PROGRESS.md) and
+[resume instructions](../NEXT_SESSION.md).
+
 The starting checkpoint is the one-epoch, 128px pretrained-combined pilot.
 Its published input-grid test IoU is 0.8402. The original official test has already
 been evaluated and visually inspected; follow-up scores are repeated benchmark

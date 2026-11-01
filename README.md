@@ -6,10 +6,14 @@ locked Oxford-IIIT Pet splits, reproducible evaluation and a local upload demo.
 The CLI exports original-size probabilities, a binary mask and a transparent PNG.
 
 **Status:** the complete official dataset has passed audit, split manifests and
-training-only statistics are saved, and **25 automated tests pass**. All six
+training-only statistics are saved, and **32 automated tests pass**. All six
 models have been trained/evaluated in a one-epoch CPU pilot (128px). The combined
 pretrained model achieves **0.840 mean IoU / 0.903 Dice** on 3,669 test images. See
 [experiment status and protocol](reports/experiment-report.md).
+
+**Accuracy study paused before shutdown:** 14 fine-tuning epochs at 256px are
+saved, reaching 0.95617 validation IoU. New test evaluation is pending. See
+[progress](PROGRESS.md) and [next-session instructions](NEXT_SESSION.md).
 
 ## Environment
 
