@@ -129,3 +129,28 @@ def test_warm_start_preserves_weights_and_contract(trained):
         assert torch.equal(value, checkpoint["model"][key])
     with pytest.raises(ValueError, match="contract"):
         initialize_model(config, "wrong-contract")
+
+
+def test_native_evaluation_and_validation_calibration(trained, tmp_path):
+    import torch
+    from petseg.calibration import calibrate
+
+    root, manifests, checkpoint = trained
+    native = tmp_path / "native"
+    evaluate(root, manifests, native, checkpoint, device="cpu", native=True)
+    with np.load(native / "predictions/Cat_6.npz") as a:
+        assert a["probability"].shape == (1, 48, 80)
+        assert a["image"].shape == (48, 80, 3)
+    metadata = json.loads((native / "metadata.json").read_text())
+    assert metadata["metric_space"] == "original"
+    exported = tmp_path / "selected.pt"
+    report = calibrate(checkpoint, tmp_path / "calibration.json", exported, [64], "cpu")
+    assert report["split"] == "val" and report["selected"]["count"] == 1
+    saved = torch.load(exported, weights_only=True)
+    assert saved["threshold"] == report["selected"]["threshold"]
+    assert "optimizer" not in saved
+    result = Predictor(exported, "cpu").predict(Image.new("RGB", (173, 81), "orange"))
+    assert result["threshold"] == saved["threshold"]
+    assert result["cutout"].size == (173, 81)
+    with pytest.raises(ValueError, match="existing"):
+        calibrate(checkpoint, tmp_path / "calibration.json", exported, [64], "cpu")

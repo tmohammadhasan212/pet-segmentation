@@ -28,11 +28,22 @@ def main(argv=None):
     p.add_argument("--output", required=True)
     p.add_argument("--split", choices=["val", "test"], default="test")
     p.add_argument(
+        "--native", action="store_true", help="Score at original annotation dimensions"
+    )
+    p.add_argument(
         "--size",
         type=int,
         default=256,
         help="Baseline only; model uses checkpoint size",
     )
+    p.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"])
+    p = sub.add_parser(
+        "calibrate", help="Select inference settings on validation images only"
+    )
+    p.add_argument("--checkpoint", required=True)
+    p.add_argument("--output", required=True)
+    p.add_argument("--export", dest="export_path")
+    p.add_argument("--sizes", type=int, nargs="+")
     p.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda", "mps"])
     p = sub.add_parser("predict")
     p.add_argument("image")
@@ -86,6 +97,7 @@ def main(argv=None):
                     args.split,
                     args.device,
                     args.size,
+                    args.native,
                 ),
                 indent=2,
             )
@@ -98,6 +110,13 @@ def main(argv=None):
         )
         export(result, args.output)
         print(f"Saved {args.output}/cutout.png ({result['inference_ms']:.1f} ms)")
+    elif args.command == "calibrate":
+        from .calibration import calibrate
+
+        report = calibrate(
+            args.checkpoint, args.output, args.export_path, args.sizes, args.device
+        )
+        print(json.dumps(report["selected"], indent=2))
     elif args.command == "demo":
         from .demo import create_demo
 

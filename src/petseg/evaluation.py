@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw, ImageOps
 
 from .data import PetDataset, content_bounds, validate_splits
 from .metrics import boundary_f1, ellipse_prior, region_metrics, summarize
+from .prediction import probabilities, restore_probability
 from .training import device_for, file_hash, load_checkpoint, sync
 
 
@@ -26,7 +27,14 @@ def write_csv(path, rows):
 
 @torch.inference_mode()
 def evaluate(
-    root, manifests, output, checkpoint=None, split="test", device="auto", size=256
+    root,
+    manifests,
+    output,
+    checkpoint=None,
+    split="test",
+    device="auto",
+    size=256,
+    native=False,
 ):
     torch.set_num_threads(4)
     if split not in {"val", "test"}:
@@ -45,7 +53,8 @@ def evaluate(
             raise ValueError(
                 "Checkpoint belongs to different split/statistics contract"
             )
-        size = ckpt["config"]["size"]
+        size = ckpt.get("inference_size", ckpt["config"]["size"])
+    flip = ckpt.get("horizontal_flip_tta", False) if ckpt else False
     threshold = ckpt.get("threshold", 0.5) if ckpt else 0.5
     ds = PetDataset(root, Path(manifests) / f"{split}.txt", stats, size)
     (output / "predictions").mkdir(parents=True, exist_ok=True)
@@ -53,7 +62,7 @@ def evaluate(
     if model:
         x = ds[0]["image"][None].to(device)
         for _ in range(3):
-            model(x).sigmoid()
+            probabilities(model, x, flip)
         sync(device)
         if device.type == "cuda":
             torch.cuda.reset_peak_memory_stats(device)
@@ -62,18 +71,14 @@ def evaluate(
         x = sample["image"][None].to(device)
         sync(device)
         start = time.perf_counter()
-        p = model(x).sigmoid()[0].cpu() if model else ellipse_prior(size, size)
+        p = (
+            probabilities(model, x, flip)[0].cpu()
+            if model
+            else ellipse_prior(size, size)
+        )
         sync(device)
         elapsed = (time.perf_counter() - start) * 1000
         y, v = sample["target"], sample["valid"]
-        row = {
-            "id": sample["id"],
-            "breed": sample["id"].rsplit("_", 1)[0],
-            **region_metrics(p, y, v, threshold),
-            "boundary_f1": boundary_f1(p, y, v, threshold),
-            "latency_ms": elapsed,
-        }
-        rows.append(row)
         rgb = (
             (
                 (
@@ -86,13 +91,36 @@ def evaluate(
             .permute(1, 2, 0)
             .numpy()
         )
+        bounds = sample["content_bounds"].numpy()
+        if native:
+            with Image.open(Path(root) / "images" / f"{sample['id']}.jpg") as image:
+                rgb = np.asarray(image.convert("RGB")).copy()
+            with Image.open(
+                Path(root) / "annotations/trimaps" / f"{sample['id']}.png"
+            ) as image:
+                labels = np.asarray(image).copy()
+            original_size = (rgb.shape[1], rgb.shape[0])
+            p = torch.from_numpy(
+                restore_probability(p[0].numpy(), bounds, original_size).copy()
+            )[None]
+            y = torch.from_numpy(labels == 1)[None]
+            v = torch.from_numpy(labels != 3)[None]
+            bounds = np.array((0, 0, *original_size))
+        row = {
+            "id": sample["id"],
+            "breed": sample["id"].rsplit("_", 1)[0],
+            **region_metrics(p, y, v, threshold),
+            "boundary_f1": boundary_f1(p, y, v, threshold),
+            "latency_ms": elapsed,
+        }
+        rows.append(row)
         np.savez_compressed(
             output / "predictions" / f"{sample['id']}.npz",
             probability=p.numpy().astype(np.float32),
             target=y.numpy().astype(bool),
             valid=v.numpy(),
             image=rgb,
-            content_bounds=sample["content_bounds"].numpy(),
+            content_bounds=bounds,
         )
         if (index + 1) % 500 == 0:
             print(f"evaluated {index + 1}/{len(ds)} images", flush=True)
@@ -103,6 +131,9 @@ def evaluate(
         "contract_hash": fingerprint,
         "size": size,
         "threshold": threshold,
+        "horizontal_flip_tta": flip,
+        "metric_space": "original" if native else "input",
+        "training_size": ckpt["config"]["size"] if ckpt else None,
         "device": str(device),
         "runtime": {
             "python": platform.python_version(),
@@ -126,7 +157,7 @@ def evaluate(
         "mps_allocated_bytes_end": torch.mps.current_allocated_memory()
         if device.type == "mps"
         else None,
-        "latency_scope": "batch-one forward + sigmoid + device transfer to CPU; 3 warmups; preprocessing excluded",
+        "latency_scope": "batch-one forward + sigmoid + selected flip TTA + device transfer to CPU; 3 warmups; preprocessing and native resizing excluded",
     }
     write_csv(output / "per_image.csv", rows)
     (output / "metadata.json").write_text(json.dumps(metadata, indent=2))
@@ -164,7 +195,7 @@ def gallery(output, selected=None):
             with Image.open(Path(root) / "images" / f"{ident}.jpg") as original:
                 bounds = content_bounds(original.size, metadata["size"])
         threshold = metadata["threshold"]
-        w, h = rgb.shape[1], rgb.shape[0]
+        w = h = min(256, max(rgb.shape[:2]))
         montage = Image.new("RGB", (w * 4, h + 30), "#202938")
         ground = np.stack((t * 255, t * 255, t * 255), -1).astype(np.uint8)
         ground[~v] = (200, 100, 200)
@@ -250,19 +281,27 @@ def comparison(directories, destination):
         )
         for d in directories
     ]
-    contracts = {(m["contract_hash"], m["split"], m["size"]) for _, m, _ in items}
+    contracts = {
+        (
+            m["contract_hash"],
+            m["split"],
+            m.get("metric_space", "input"),
+            m["size"] if m.get("metric_space", "input") == "input" else None,
+        )
+        for _, m, _ in items
+    }
     if len(contracts) != 1:
         raise ValueError(
-            "Comparison requires identical contract, split and output resolution"
+            "Comparison requires identical contract, split and metric grid"
         )
-    text = "| Run | Device | Parameters | IoU | Dice | Precision | Recall | Boundary F1 | Latency ms |\n|---|---|---:|---:|---:|---:|---:|---:|---:|\n"
+    text = "| Run | Input px | Metric grid | Device | Parameters | IoU | Dice | Precision | Recall | Boundary F1 | Latency ms |\n|---|---:|---|---|---:|---:|---:|---:|---:|---:|---:|\n"
     for _, m, s in items:
         values = [
             s.get(k, {}).get("mean")
             for k in ("iou", "dice", "precision", "recall", "boundary_f1", "latency_ms")
         ]
         text += (
-            f"| {m['name']} | {m['device']} | {m['parameters']} | "
+            f"| {m['name']} | {m['size']} | {m.get('metric_space', 'input')} | {m['device']} | {m['parameters']} | "
             + " | ".join("—" if v is None else f"{v:.4f}" for v in values)
             + " |\n"
         )

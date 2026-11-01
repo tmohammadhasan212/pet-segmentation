@@ -7,6 +7,7 @@ import torch
 from PIL import Image, ImageOps, UnidentifiedImageError
 
 from .data import image_tensor, letterbox
+from .prediction import probabilities, restore_probability
 from .training import device_for, file_hash, load_checkpoint, sync
 
 MAX_PIXELS = 40_000_000
@@ -68,17 +69,19 @@ class Predictor:
             raise ValueError("Threshold must lie in [0,1]")
         sync(self.device)
         start = time.perf_counter()
-        canvas, bounds = letterbox(image, self.checkpoint["config"]["size"])
+        size = self.checkpoint.get("inference_size", self.checkpoint["config"]["size"])
+        canvas, bounds = letterbox(image, size)
         stats = self.checkpoint["stats"]
         x = image_tensor(canvas, stats["mean"], stats["std"])[None].to(self.device)
-        p = self.model(x).sigmoid()[0, 0].cpu().numpy()
-        # Remove padding before restoring resolution, never stretch the entire square.
         p = (
-            Image.fromarray(p)
-            .crop(bounds)
-            .resize(image.size, Image.Resampling.BILINEAR)
+            probabilities(
+                self.model, x, self.checkpoint.get("horizontal_flip_tta", False)
+            )[0, 0]
+            .cpu()
+            .numpy()
         )
-        p = np.clip(np.asarray(p), 0, 1)
+        # Remove padding before restoring resolution, never stretch the entire square.
+        p = restore_probability(p, bounds, image.size)
         outputs = make_outputs(image, p, threshold)
         sync(self.device)
         outputs.update(

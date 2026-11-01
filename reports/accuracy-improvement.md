@@ -27,3 +27,37 @@ No paid compute, cloud uploads, or extra datasets are used.
 All hyperparameters are stored in `configs/accuracy/`. Checkpoints retain the
 initial weight file's SHA-256 and split/statistics contract. Training logs and
 best/last weights live under the ignored `runs/accuracy/` directory.
+
+## Reproducible commands
+
+```bash
+petseg train --config configs/accuracy/finetune-256.yaml --output runs/accuracy/finetune-256
+petseg train --config configs/accuracy/refine-384.yaml --output runs/accuracy/refine-384
+petseg calibrate --checkpoint runs/accuracy/finetune-256/best.pt --sizes 256 384 512 --device mps --output runs/accuracy/finetune-256/calibration.json --export runs/accuracy/finetune-256/calibrated.pt
+petseg calibrate --checkpoint runs/accuracy/refine-384/best.pt --sizes 256 384 512 --device mps --output runs/accuracy/refine-384/calibration.json --export runs/accuracy/refine-384/calibrated.pt
+```
+
+Calibration evaluates the original-resolution validation masks with 25 thresholds
+from 0.2 to 0.8 in steps of 0.025, with and without horizontal-flip averaging.
+At each of 256/384/512 input pixels, it calculates plain and flip-averaged
+probabilities from two forward passes. Macro IoU selects the settings. The test
+split cannot be passed to the calibration command. Exported inference checkpoints
+contain selected threshold, inference size and flip-averaging policy; the CLI,
+evaluator and demo all use those settings automatically. Training resolution is
+retained separately, and the initial/source checkpoint hashes preserve provenance.
+
+Compare only the validation-selected candidate on the final test benchmark and
+restore the pilot's probabilities to the same original annotation grid:
+
+```bash
+petseg evaluate --checkpoint runs/pilot/pretrained-combined/best.pt --native --device mps --output reports/generated/accuracy/pilot-native
+petseg evaluate --checkpoint runs/accuracy/selected.pt --native --device mps --output reports/generated/accuracy/selected-native
+petseg report reports/generated/accuracy/pilot-native reports/generated/accuracy/selected-native --output reports/generated/accuracy/results.md
+```
+
+`selected.pt` is copied from whichever calibrated candidate has the highest
+validation macro IoU, before either new test evaluation is examined. Native
+scores are computed on original trimaps after undoing letterbox padding, with
+all ambiguous border pixels excluded. The comparison code rejects mixing native
+scores with the earlier model-input-grid results. Native boundary F1 uses a
+two-original-pixel tolerance and remains separate from region metrics.
