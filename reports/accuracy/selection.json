@@ -4,7 +4,6 @@
   "rule": "Highest native-grid mean validation IoU across the two completed calibrated stage checkpoints",
   "split": "val",
   "metric_space": "original",
-  "test_results_inspected_before_selection": false,
   "winning_stage": "refine-384",
   "checkpoint": "runs/accuracy/selected.pt",
   "checkpoint_sha256": "6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865",
@@ -35,5 +34,7 @@
     "mean_dice": 0.9832429278237136,
     "count": 736
   },
-  "contract_hash": "0b081f28c49e40420d0bc739ec591819239966df60104055faef00e090e26a69"
+  "contract_hash": "0b081f28c49e40420d0bc739ec591819239966df60104055faef00e090e26a69",
+  "new_model_test_results_inspected_before_selection": false,
+  "published_test_previously_inspected_during_pilot": true
 }
