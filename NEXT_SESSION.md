@@ -7,8 +7,10 @@ Read `PROGRESS.md` and inspect `git status` first. The requested accuracy study 
 
 Working directory: `/Users/mohammd/Desktop/pet-segmentation`.
 Python: `.venv/bin/python` (3.13). Existing local Git repository: `main`; preserve
-unrelated changes and keep meaningful completed work committed. No remote has been
-published. Weights, dataset, generated arrays and environments stay outside Git.
+unrelated changes and keep meaningful completed work committed. GitHub remote
+`origin`: `https://github.com/tmohammadhasan212/pet-segmentation.git` (private).
+Push completed commits with `git push origin main`. Weights, dataset, generated
+arrays and environments stay outside Git.
 
 Selected model: `runs/accuracy/selected.pt`, SHA-256
 `6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865`.
