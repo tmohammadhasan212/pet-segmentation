@@ -6,13 +6,14 @@ locked Oxford-IIIT Pet splits, reproducible evaluation and a local upload demo.
 The CLI exports original-size probabilities, a binary mask and a transparent PNG.
 
 **Status:** the complete official dataset has passed audit, split manifests and
-training-only statistics are saved, and **32 automated tests pass**. All six
+training-only statistics are saved, and **33 automated tests pass**. All six
 models have been trained/evaluated in a one-epoch CPU pilot (128px). The combined
 pretrained model achieves **0.840 mean IoU / 0.903 Dice** on 3,669 test images. See
 [experiment status and protocol](reports/experiment-report.md).
 
-**Accuracy study paused before shutdown:** 14 fine-tuning epochs at 256px are
-saved, reaching 0.95617 validation IoU. New test evaluation is pending. See
+**Accuracy study resumed 2026-11-02:** training continues from the saved epoch-14
+checkpoint (0.95617 validation IoU), preserving optimizer and scheduler state.
+New test evaluation is pending. See
 [progress](PROGRESS.md) and [next-session instructions](NEXT_SESSION.md).
 
 ## Environment
@@ -40,6 +41,17 @@ python -m pip install -e . --no-deps
 PyTorch auto-selects CUDA, Apple MPS, then CPU. CUDA mixed precision is enabled
 by config; CPU/MPS use float32. Seeds and deterministic CuDNN settings constrain
 randomness but exact equality across accelerator types is not guaranteed.
+
+To continue an interrupted run without resetting its optimizer, schedule or epoch
+limit, use the same config and output directory with `--resume`:
+
+```bash
+petseg train --config configs/accuracy/finetune-256.yaml --output runs/accuracy/finetune-256 --resume
+```
+
+Resume validates the saved config and data contract and appends history. New
+checkpoints include RNG and loader state; the original epoch-14 checkpoint predates
+that support and cannot recover the exact random sequence across its old pause.
 
 ## Data
 
