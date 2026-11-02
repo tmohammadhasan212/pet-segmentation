@@ -1,0 +1,9 @@
+id,foreground_pixels,background_pixels,ignored_pixels,review,included_in_primary_test_score
+Egyptian_Mau_20,0,3110400,0,All-background source trimap despite visible pet,True
+Persian_259,0,165910,0,All-background source trimap despite visible pet,True
+japanese_chin_199,0,187500,0,All-background source trimap despite visible pet,True
+keeshond_7,0,166500,0,All-background source trimap despite visible pet,True
+saint_bernard_60,0,187500,0,All-background source trimap despite visible pet,True
+saint_bernard_78,0,187500,0,All-background source trimap despite visible pet,True
+wheaten_terrier_195,0,165000,0,All-background source trimap despite visible pet,True
+Persian_273,82128,30646,23901,Foreground/background appear inverted relative to visible cat,True

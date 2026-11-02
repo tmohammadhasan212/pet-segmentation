@@ -5,16 +5,24 @@ U-Net, a ResNet18 encoder U-Net, three masked losses, a central ellipse baseline
 locked Oxford-IIIT Pet splits, reproducible evaluation and a local upload demo.
 The CLI exports original-size probabilities, a binary mask and a transparent PNG.
 
-**Status:** the complete official dataset has passed audit, split manifests and
-training-only statistics are saved, and **33 automated tests pass**. All six
-models have been trained/evaluated in a one-epoch CPU pilot (128px). The combined
-pretrained model achieves **0.840 mean IoU / 0.903 Dice** on 3,669 test images. See
-[experiment status and protocol](reports/experiment-report.md).
+**Status:** the full dataset is audited, locked splits are preserved, and
+**33 automated tests pass**. The completed accuracy study achieved **96.76% mean
+foreground IoU / 98.05% Dice** on all 3,669 official test images at original
+annotation resolution, up from the pilot's **84.03% IoU / 90.26% Dice** on the
+same grid. The model and inference settings were selected using validation only.
 
-**Accuracy study resumed 2026-11-02:** training continues from the saved epoch-14
-checkpoint (0.95617 validation IoU), preserving optimizer and scheduler state.
-New test evaluation is pending. See
-[progress](PROGRESS.md) and [next-session instructions](NEXT_SESSION.md).
+| Original-resolution test benchmark | IoU | Dice |
+|---|---:|---:|
+| One-epoch pretrained pilot | 0.8403 | 0.9026 |
+| Refined model, 384px + flip averaging | **0.9676** | **0.9805** |
+
+The selected model uses threshold **0.475** and averages ordinary/flipped
+predictions. See the [full accuracy report](reports/accuracy-improvement.md),
+[reproducible evidence](reports/accuracy/README.md), and
+[20 reviewed examples](reports/accuracy/selected-native/gallery.html).
+The earlier six-model/loss pilot remains in the
+[original report](reports/experiment-report.md). Test results are repeated public
+benchmark measurements; the test was already inspected during the pilot.
 
 ## Environment
 
@@ -130,8 +138,9 @@ petseg evaluate --checkpoint runs/scratch-combined/best.pt --device mps --output
 
 Pilot scratch base channels are 16 (1.96M parameters), versus 14.36M for the
 pretrained variant. These are undertrained, unequal-capacity models, not an
-isolated measurement of pretraining or a converged benchmark. Full 256px,
-60-epoch experiments and repeated seeds have **not** been run. See the
+isolated measurement of pretraining or a converged benchmark. The full six-config,
+60-epoch study and repeated seeds have **not** been run; the follow-up fine-tunes
+the combined-loss pretrained model for 30 epochs at 256px and eight at 384px. See the
 [complete measurements](reports/pilot/results.md), [distributions](reports/pilot/results.png)
 and [reviewed error gallery](reports/pilot/pretrained-combined/gallery.html).
 
@@ -141,19 +150,23 @@ along with `results.png` showing per-image IoU/Dice distributions.
 
 ## Cutouts and upload demo
 
-The trained local pilot checkpoint is already available at
-`runs/pilot/pretrained-combined/best.pt` (ignored by Git):
+The validation-selected checkpoint is available locally at
+`runs/accuracy/selected.pt` (ignored by Git). Its threshold, input size and
+flip-averaging policy are loaded automatically:
 
 ```bash
-petseg demo --checkpoint runs/pilot/pretrained-combined/best.pt
-petseg predict /path/to/pet.jpg --checkpoint runs/pilot/pretrained-combined/best.pt --output outputs/pet
+petseg demo --checkpoint runs/accuracy/selected.pt
+petseg predict /path/to/pet.jpg --checkpoint runs/accuracy/selected.pt --output outputs/pet
 ```
 
-![Held-out validation photo and pilot cutout](assets/example-comparison.png)
+![Original, pilot and selected cutout](assets/accuracy/example-comparison.png)
 
-The example uses `Abyssinian_10`, outside the training split; the stray retained
-floor patch is a visible false positive. Attribution and modifications are
-recorded in [assets/README.md](assets/README.md).
+The example uses held-out validation photo `Abyssinian_10`. The selected model
+removes the pilot's detached floor patch; fine hair remains approximate. The
+selected PNG was downloaded through the browser and verified at the original
+375×500 dimensions with transparency. See [demo proof](assets/accuracy/demo-screenshot.jpg)
+and [attribution](assets/README.md). The original pilot checkpoint and assets
+remain available for comparison.
 
 For a separately trained full-study checkpoint:
 
@@ -176,6 +189,16 @@ single-frame TIFF are supported; invalid/tiny/over-40-megapixel inputs fail clea
 
 ## Regenerate results and inspect errors
 
+Rebuild the new table, distributions, paired bootstrap and breed comparison from
+small committed snapshots (no weights or dataset needed):
+
+```bash
+python scripts/compare_accuracy.py reports/accuracy/pilot-native reports/accuracy/selected-native --output outputs/accuracy-report
+```
+
+See [accuracy evidence](reports/accuracy/README.md) for full prediction regeneration
+and timing commands. Full arrays are kept under ignored `reports/generated/accuracy/`.
+
 Evaluation stores compressed probabilities, targets, valid masks and resized
 images per test ID under `predictions/`. Regenerate without model or dataset:
 
@@ -186,6 +209,8 @@ petseg gallery reports/generated/scratch-combined
 petseg gallery reports/generated/scratch-combined --ids reports/gallery-ids.txt
 ```
 
+The selected model has [20 matched reviewed examples](reports/accuracy/selected-native/gallery.html)
+and [per-example pilot comparisons](reports/accuracy/reviewed-comparison.csv).
 The pilot has [20 reviewed examples](reports/pilot/pretrained-combined/gallery.html)
 with [annotation/category notes](reports/gallery-review.csv). Open the evaluation's `gallery.html`. Its initial gallery is the 20 worst IoUs;
 fill `gallery_tags.csv`, then curate examples to cover fur, tails, multiple pets,
@@ -232,3 +257,10 @@ Code: [MIT](LICENSE). Dataset and derived pet examples: see [DATA.md](DATA.md).
 No weights have been published; the commands above reproduce training. If weights
 are released, record an immutable URL, SHA-256, associated config and split hash
 before claiming a downloadable pretrained background-removal tool.
+
+The reviewed test annotations include seven all-background masks despite visible
+pets and one apparently inverted mask. All remain in the reported scores; see
+[annotation review](reports/accuracy/annotation-review.csv). The selected model
+still regresses on 170 images, including a missing Chihuahua body and retained
+Pomeranian background. The [accuracy report](reports/accuracy-improvement.md)
+records these failures, ignored-border caveats and the speed/quality tradeoff.

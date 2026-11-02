@@ -1,121 +1,84 @@
-# Progress report — resumed 2026-11-02
+# Progress report — completed 2026-11-03
 
-The user resumed the study on 2026-11-02. Both stages are now complete: 30 epochs
-at 256px (best epoch 27, input-grid validation IoU 0.9640818123), then eight epochs
-at 384px (best epoch 6, input-grid validation IoU 0.9679561295). All 33 tests pass.
+The accuracy study resumed on 2026-11-02 and is complete. Both training stages,
+validation-only calibration, frozen model selection, common-grid test comparison,
+visual review and browser upload/download verification are finished.
 
-**Final selection was frozen on validation before new test evaluation**, in
-`reports/accuracy/selection.json` (commits `5715e13`, `8658836`). Winner:
-`runs/accuracy/selected.pt`, 384px input, horizontal-flip averaging, threshold
-0.475; native-grid validation IoU **0.9698066408**, Dice **0.9832429278**.
-Selected SHA-256: `6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865`.
+## Final measured result
 
-Native-grid test evaluations are running sequentially (pilot then selected), log:
-`runs/accuracy/native-evaluations.log`. Check for an existing process before
-starting anything. Full outputs: `reports/generated/accuracy/`. New test results
-must remain reporting-only; do not retune on them. Demo is still stopped pending
-evaluation/verification. Historical pause evidence is preserved below and in
-`runs/accuracy/finetune-256/paused-epoch-14/`.
+All 3,669 official test images were scored on their original annotation grid:
 
-## Implemented and committed
+| System | Mean foreground IoU | Dice |
+|---|---:|---:|
+| One-epoch pretrained pilot | 0.8402687784 | 0.9025521015 |
+| Selected refined model | **0.9676228798** | **0.9804842858** |
 
-The repository is on branch `main`. It contains the complete data pipeline,
-auditing and locked split manifests, handwritten scratch U-Net, ResNet18 encoder
-U-Net, masked BCE/Dice losses, training/checkpointing, CLI cutouts, Gradio demo,
-per-image evaluation, galleries, and reproducible reports. Dataset, environments,
-checkpoints and large generated outputs are deliberately ignored by Git.
+Mean IoU gain: **12.735 percentage points**. Small-pet IoU: 0.736248 → 0.949622.
+3,491 images improved, eight tied and 170 worsened. These are repeated public
+benchmark measurements: the official test was already inspected during the pilot.
+No new test result chose model weights or inference settings.
 
-The original pilot trained all six model/loss combinations for one epoch at
-128px. The pretrained combined-loss pilot measured **0.8402 mean IoU / 0.9025
-Dice** on the official test set, scored on the 128px input grid. Its results are
-preserved in [reports/pilot](reports/pilot/README.md).
+## Selected model and running demo
 
-This session added:
+- Checkpoint: `runs/accuracy/selected.pt` (local, Git-ignored).
+- SHA-256: `6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865`.
+- Selected stage: `refine-384`, best epoch 6.
+- Inference: 384px letterbox, horizontal-flip probability averaging, threshold 0.475.
+- Validation: native-grid mean IoU 0.9698066408 / Dice 0.9832429278, 736 images.
+- Model selection was committed before new test evaluation (`5715e13`, `8658836`).
+- Local demo: http://127.0.0.1:7860/ using the selected model on Apple MPS.
+- Browser upload and actual PNG download verified: 375×500 RGBA, alpha 0/255,
+  using validation photo `Abyssinian_10`. Screenshot and downloaded example are
+  under `assets/accuracy/`; `reports/accuracy/browser-verification.json` records it.
 
-- Weight-only initialization from a prior checkpoint, with source hash and
-  split/statistics contract checks.
-- Separate encoder/decoder learning rates, ReduceLROnPlateau scheduling and
-  faster validation transfers from the accelerator.
-- Original-annotation-resolution evaluation (`petseg evaluate --native`).
-- Validation-only threshold/resolution selection and horizontal-flip averaging
-  (`petseg calibrate`); the selected settings are stored in exported checkpoints
-  and used by prediction/evaluation/demo automatically.
-- Learning-curve rendering from saved histories.
+Training and evaluation processes have completed. The demo remains running for
+user use. Check process/port state before starting another server. Process/session
+IDs are not durable across shutdown.
 
-The last complete automated suite passed **32 tests**. Syntax/lint checks passed.
-Apple MPS GPU acceleration was verified outside the Codex sandbox; the sandbox
-itself reports MPS unavailable. The new training job used MPS float32.
+## Completed engineering and training
 
-## Exact paused training state
+Proper `train --resume` restores model, optimizer, scheduler and scaler, validates
+config/data contract, preserves history and starts at the correct continued epoch.
+New checkpoints embed history and RNG/loader state, with atomic file updates.
+An interrupted-vs-uninterrupted CPU integration test verifies identical weights,
+history and scheduling. All **33 tests** and lint/format checks passed.
 
-Run: `runs/accuracy/finetune-256/`
-Config: `configs/accuracy/finetune-256.yaml`
-Initialization: `runs/pilot/pretrained-combined/best.pt`
+The 256px stage resumed from saved epoch 14 and completed the original 30-epoch
+limit. Best epoch 27: input-grid validation IoU 0.9640818123. The 384px refinement
+completed eight epochs; best epoch 6: input-grid validation IoU 0.9679561295.
+The legacy epoch-14 checkpoint lacked RNG state, so exact random-sequence continuity
+across that old pause cannot be claimed. Untouched original checkpoint/log copies
+remain under `runs/accuracy/finetune-256/paused-epoch-14/`; historical pause evidence
+is in `reports/accuracy-progress/` and Git commit `b94123e`.
 
-**Fourteen epochs are complete. Epoch fifteen was interrupted at the user's
-request; its partial in-memory updates were discarded.** Both `best.pt` and
-`last.pt` are complete, reloadable checkpoints from epoch fourteen.
+Both stage-best checkpoints were calibrated on validation only: input sizes
+256/384/512, plain/flip averaging, 25 thresholds from 0.2 to 0.8. Native validation
+IoU selected the final system before new test evaluation. The model has 14,359,105
+parameters. Warm prediction-pipeline mean latency over the same 50 validation
+photos: selected 210.98 ms CPU (four threads) / 52.63 ms Apple MPS; pilot 21.14 /
+11.29 ms. Timing details and raw measurements are saved.
 
-| Measurement | Saved value |
-|---|---:|
-| Best epoch | 14 |
-| Validation mean foreground IoU | **0.9561734281428408** |
-| Training loss at epoch 14 | 0.029302835598608235 |
-| Validation loss at epoch 14 | 0.0397806953912115 |
-| Encoder learning rate for continuation | 0.00003 |
-| Decoder learning rate for continuation | 0.00015 |
-| Scheduler bad-epoch count | 0 |
-| Maximum configured stage length | 30 epochs |
-| Early-stopping patience | 6 epochs |
+## Evidence and limitations
 
-The 0.95617 score is **validation IoU on the 256px training grid**. It is not a
-new test score and must not be presented as directly comparable to the pilot's
-128px test metric. No new-model test evaluation has been performed.
+- [Full report and commands](reports/accuracy-improvement.md)
+- [Evidence index](reports/accuracy/README.md)
+- [Result table](reports/accuracy/results.md), [distributions](reports/accuracy/results.png)
+- [Training curves](reports/accuracy/training.png)
+- [Selection provenance](reports/accuracy/selection.json)
+- [20 reviewed cases](reports/accuracy/selected-native/gallery.html)
+- [Per-example comparison](reports/accuracy/reviewed-comparison.csv)
+- [Annotation anomalies](reports/accuracy/annotation-review.csv)
 
-Saved checkpoint state includes model, optimizer, scheduler, scaler, epoch,
-config, normalization statistics and data contract. **True resume is now implemented** via `train --resume`. Legacy epoch-14
-checkpoints lack RNG/loader state, so randomness across the old pause cannot be
-reproduced exactly; subsequent checkpoints save these states and embed history.
+Full predictions remain under ignored `reports/generated/accuracy/`; weights,
+dataset and environment remain outside Git. Committed metric snapshots regenerate
+the table, distributions, paired bootstrap and breed comparison without weights.
 
-The two checkpoint files are about 164 MiB each and remain on local disk across
-shutdown; they are not in Git. Their hashes and paths are recorded in
-[paused-state.json](reports/accuracy-progress/paused-state.json). Preserve the
-local `runs/`, `data/oxford-pets/` and `.venv/` directories.
+Real regressions remain: `chihuahua_82` loses much of its body and `pomeranian_93`
+retains framed background. Seven all-background test masks despite visible pets,
+and one apparently inverted mask, are documented; **all remain in primary scores**.
+Wide ignored contours make region scores forgiving; binary alpha does not recover
+individual translucent hairs. This is an improvement over an undertrained pilot,
+not a proven accuracy ceiling or a newly blinded generalization estimate.
 
-## Saved evidence
-
-- [All 14 epoch records](reports/accuracy-progress/finetune-256-history.json)
-- [Exact run config](reports/accuracy-progress/finetune-256-config.json)
-- [Learning curves](reports/accuracy-progress/finetune-256-training.png)
-- [Machine-readable paused state and checkpoint SHA-256s](reports/accuracy-progress/paused-state.json)
-- Full console log: `runs/accuracy/finetune-256/training.log` (includes the
-  intentional KeyboardInterrupt). Do not rely on `/tmp` surviving a reboot.
-- [Improvement protocol and reproduction commands](reports/accuracy-improvement.md)
-
-## Remaining work
-
-1. Implement and test continuation from `last.pt`, restoring optimizer/scheduler
-   state and appending history from epoch fifteen. Document the missing prior RNG
-   state and save reproducibility state in future checkpoints.
-2. Continue the 256px stage to its stopping rule, then run the configured 384px
-   refinement from its validation-selected best checkpoint.
-3. Calibrate inference size (256/384/512), threshold and flip averaging using
-   validation images only. Select the final system using native-grid validation IoU.
-4. Evaluate the selected system and the pilot on the same original-resolution
-   test annotation grid; regenerate fair comparison tables and figures.
-5. Review cutouts/errors, update demo and documentation, run relevant checks and
-   commit the measured results. Keep the existing pilot evidence.
-
-The published test has already been evaluated and inspected during the pilot.
-Follow-up test scores are repeated benchmark measurements, not a newly blinded
-estimate. All new tuning decisions must use the 736 validation images.
-
-## Git history before this pause report
-
-- `b6d1efb` — implementation, demo, configs and tests
-- `4c3b3a0` — locked splits, pilot measurements and examples
-- `e5248c7` — high-resolution fine-tuning support/configs
-- `df85848` — validation calibration and native-grid evaluation
-- `eeef36c` — training convergence plots
-
-The user expects meaningful changes and results to be committed as work proceeds.
+No further training is needed to finish this study. Read `NEXT_SESSION.md` before
+future continuation; preserve the selected model, source checkpoints and manifests.

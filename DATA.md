@@ -56,8 +56,10 @@ files along with `stats.json`, `audit.json` and `annotation-source.txt` after
 preparation. Existing complete manifests are verified, never silently replaced.
 The checkpoint records a SHA-256 of all three manifests and statistics;
 evaluation rejects a different contract. No test labels choose thresholds,
-checkpoints, learning rates or normalization. Threshold is preregistered at 0.5;
-interactive demo adjustment is for individual cutouts, not final test reporting.
+checkpoints, learning rates or normalization. The pilot fixes threshold at 0.5; the follow-up accuracy study selects its
+threshold (0.475), resolution and flip policy using validation only before new
+test evaluation. Interactive demo adjustments are for individual cutouts, not
+final benchmark reporting.
 
 Normalization mean/std are computed only from training images (RGB pixels after
 aspect-preserving thumbnails up to 256 pixels). Both encoders use these same
@@ -77,3 +79,14 @@ values to belong to {1,2,3}; missing and corrupt files stop training. Annotation
 coverage for multiple pets must be checked visually per image: never assume all
 animals in the photograph are labeled. Record the answer in the generated
 `gallery_tags.csv` before interpreting such failures.
+
+## Reviewed annotation anomalies
+
+The follow-up test review found seven all-background source trimaps despite
+visible pets and one apparently inverted foreground/background trimap. Their
+IDs and raw label counts are recorded in
+[annotation-review.csv](reports/accuracy/annotation-review.csv). These masks use
+valid label values and pass the structural audit; structural validity does not
+establish semantic annotation quality. No source masks, locked manifests or
+normalization statistics were changed, and all 3,669 test images remain in both
+primary scores. See the [accuracy report](reports/accuracy-improvement.md).

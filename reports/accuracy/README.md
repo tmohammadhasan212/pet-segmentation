@@ -71,3 +71,32 @@ pilot and selected system on the same original annotation grid. Ignore trimap
 label 3 in all denominators. The official test was inspected during the pilot,
 so follow-up test measurements are repeated benchmarks rather than newly blinded
 estimates. No new test scores have been used for tuning.
+
+## Final test evidence
+
+The frozen system measured **0.967623 IoU / 0.980484 Dice**, versus the pilot's
+0.840269 / 0.902552, on all 3,669 original-resolution test masks. `pilot-native/`
+and `selected-native/` contain complete metadata, per-image CSVs and summaries;
+`selected-native/gallery.html` references the 20 curated native-grid panels.
+`reviewed-comparison.csv` preserves original category/annotation notes alongside
+paired scores and observed errors. `annotation-review.csv` and `annotation-examples/`
+document seven empty-foreground source masks and one apparently inverted mask;
+all remain in primary scores. Dataset-derived panels follow the attribution and
+CC BY-SA terms in [DATA.md](../../DATA.md).
+
+`paired-comparison.json` reports a 0.127354 mean IoU gain, paired-image bootstrap
+95% interval [0.122600, 0.132127], seed 42, 2,000 resamples. It does not capture
+training-seed variability or establish a newly blinded estimate. 3,491 images
+improved, eight tied, 170 worsened. `breed-comparison.csv` covers all 37 breeds.
+
+Rebuild the table, distribution figure, paired statistics and breed comparison
+from these committed snapshots, without model weights or full predictions:
+
+```bash
+python scripts/compare_accuracy.py reports/accuracy/pilot-native reports/accuracy/selected-native --output outputs/accuracy-report
+```
+
+Recompute pixel metrics from the full local arrays with `petseg report` and
+`--regenerate` against the full ignored directories under `reports/generated/accuracy/`.
+**Do not use `--regenerate` on these small snapshots**, which contain no probability
+arrays. See the [full report](../accuracy-improvement.md) for evaluation commands.

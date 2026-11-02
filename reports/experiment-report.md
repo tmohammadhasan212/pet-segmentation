@@ -1,3 +1,8 @@
+> Follow-up completed 2026-11-03: the validation-selected refined model achieved
+> 0.967623 IoU / 0.980484 Dice on the original-resolution test grid. See the
+> [accuracy study](accuracy-improvement.md). This document preserves the original
+> six-model, one-epoch pilot and its 128px scoring grid.
+
 # Experimental protocol and completion record
 
 ## Status

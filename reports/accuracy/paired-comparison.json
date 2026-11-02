@@ -1,0 +1,20 @@
+{
+  "count": 3669,
+  "metric": "per-image foreground IoU",
+  "mean_gain": 0.1273541013953995,
+  "median_gain": 0.0852760648067743,
+  "improved": 3491,
+  "unchanged": 8,
+  "worsened": 170,
+  "bootstrap": {
+    "seed": 42,
+    "resamples": 2000,
+    "method": "paired image percentile bootstrap",
+    "confidence": 0.95,
+    "interval": [
+      0.12259994779894862,
+      0.13212654407693294
+    ],
+    "limitation": "Conditional on these fitted models and this previously inspected public benchmark; not training-run variability or a newly blind estimate."
+  }
+}

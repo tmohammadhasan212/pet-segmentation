@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-03",
+  "url": "http://127.0.0.1:7860/",
+  "model_version": "petseg-0.1.0:6690cd31b0d0",
+  "threshold": 0.475,
+  "device": "mps",
+  "photo": "Abyssinian_10 (validation)",
+  "browser_upload_success": true,
+  "browser_download_success": true,
+  "downloaded_png_mode": "RGBA",
+  "downloaded_png_size": [
+    375,
+    500
+  ],
+  "alpha_values": [
+    0,
+    255
+  ],
+  "first_prediction_ms": 196.7
+}

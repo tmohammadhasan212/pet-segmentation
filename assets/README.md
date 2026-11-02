@@ -21,3 +21,12 @@ photo `Abyssinian_10` with the one-epoch pretrained-combined pilot at threshold
 display. The detached floor patch is a real false positive, retained to show a
 limitation. Dataset image and derived panels: the attribution and CC BY-SA terms
 above apply. The binary alpha does not recover translucent fur.
+
+`accuracy/example-cutout.png` is the actual browser-downloaded PNG produced by
+the selected model (`6690cd31b0d0`), 384px input with flip averaging and threshold
+0.475. It and `accuracy/example-mask.png` retain 375×500 dimensions.
+`accuracy/example-comparison.png` shows original / pilot / selected at display
+size; the selected result removes the pilot's detached floor patch.
+`accuracy/demo-screenshot.jpg` records the verified local upload/download flow.
+These use the same validation photo `Abyssinian_10`; the dataset attribution,
+CC BY-SA 4.0 terms and original image-owner rights above apply to all derivatives.

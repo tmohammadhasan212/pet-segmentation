@@ -1,128 +1,83 @@
-# Current continuation status — 2026-11-02
+# Next-session reminder — completed study, 2026-11-03
 
-Both training stages and validation calibration are complete. The frozen winner
-is `runs/accuracy/selected.pt` (SHA-256
-`6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865`),
-384px input, flip averaging, threshold 0.475; native validation IoU 0.9698066408.
-See `reports/accuracy/selection.json`. New test evaluations are running sequentially
-(pilot then selected); check process state and `runs/accuracy/native-evaluations.log`
-before launching a duplicate. Output dirs: `reports/generated/accuracy/pilot-native`
-and `selected-native`. After they finish, snapshot small results/reviewed galleries,
-write fair native-grid comparison/report, update demo/examples, check browser
-upload/download, and commit completed evidence. Tests/lint/format passed (33 tests).
-Do not retune using test outcomes. Legacy epoch-14 checkpoint backups are preserved.
-The original pause notes below are historical; resume support and training are done.
+Read `PROGRESS.md` and inspect `git status` first. The requested accuracy study is
+**complete**; do not restart its training or recalibrate using test outcomes.
 
-# Resume note for the next Codex session
+## Current deliverable
 
-**User intent:** improve segmentation accuracy beyond the original one-epoch
-pilot. The user then explicitly paused for a system shutdown and asked for this
-handoff. Do not restart training until they ask to continue.
+Working directory: `/Users/mohammd/Desktop/pet-segmentation`.
+Python: `.venv/bin/python` (3.13). Existing local Git repository: `main`; preserve
+unrelated changes and keep meaningful completed work committed. No remote has been
+published. Weights, dataset, generated arrays and environments stay outside Git.
 
-When they say “continue,” read `PROGRESS.md`, this file and
-`reports/accuracy-progress/paused-state.json`, then inspect `git status`.
-The existing Git repository is on `main`; do not initialize another repository.
+Selected model: `runs/accuracy/selected.pt`, SHA-256
+`6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865`.
+It embeds 384px inference, horizontal-flip probability averaging and threshold
+0.475; the CLI, evaluator and demo load these automatically.
 
-## Start here
+Final original-grid test scores: **IoU 0.9676228798 / Dice 0.9804842858** on all
+3,669 images. Pilot on identical masks: 0.8402687784 / 0.9025521015. Selection was
+frozen on validation first: IoU 0.9698066408 on 736 validation images. See
+`reports/accuracy/selection.json` (committed before new test evaluation).
 
-Working directory: `/Users/mohammd/Desktop/pet-segmentation`
-Python environment: `.venv/bin/python` (Python 3.13; dependencies installed).
-The entire Oxford-IIIT Pet dataset is already prepared and audited. Do not
-redownload/resplit it. Manifests lock 2,944 train / 736 val / 3,669 test images.
+## Demo and reproducibility
 
-All training/demo processes were intentionally stopped. Prior terminal session
-IDs and `/tmp` logs are not reliable after shutdown. The persistent full training
-log is `runs/accuracy/finetune-256/training.log`.
+The selected-model demo was left running at http://127.0.0.1:7860/. Check the port
+and process before launching another instance. After shutdown it needs restarting:
 
-**Apple GPU works outside the Codex sandbox.** For GPU probes/training/calibration
-use `functions.exec` -> `exec_command` with `sandbox_permissions:
-"require_escalated"`; the sandbox falsely reports MPS unavailable. GPU work and
-local training were authorized by the user's “do whatever you can” request.
-Normal Terminal execution can also access MPS. Do not silently fall back to CPU
-for the long job without checking this.
+```bash
+.venv/bin/python -m petseg demo --checkpoint runs/accuracy/selected.pt --device mps
+```
 
-## Verify preserved work first
+Apple MPS is available outside the Codex sandbox; sandbox probes can falsely say
+it is unavailable. Use `exec_command` with `sandbox_permissions: require_escalated`
+for MPS work, as before, or run from ordinary Terminal. Do not silently substitute
+CPU for a long GPU job. GPU work was authorized in the accuracy request.
+The demo upload/download was verified; `assets/accuracy/demo-screenshot.jpg` and
+`reports/accuracy/browser-verification.json` record it. Downloaded PNG: 375×500 RGBA.
 
-- `runs/accuracy/finetune-256/last.pt`: complete epoch 14, validation IoU
-  `0.9561734281428408`; SHA-256
-  `57a71b7f8bde313abdac6bc90bf7d6e1df61f683e75c4d8d788fcd866edefbc8`.
-- `runs/accuracy/finetune-256/best.pt`: also epoch 14, same validation score;
-  SHA-256 `80a2bcfc2b0319518e8ade575091b1c2afad758b08289b300fdf01c5c35334f7`.
-- Original pilot: `runs/pilot/pretrained-combined/best.pt`; SHA-256
+Rebuild small report evidence without weights/dataset:
+
+```bash
+.venv/bin/python scripts/compare_accuracy.py reports/accuracy/pilot-native reports/accuracy/selected-native --output outputs/accuracy-report
+```
+
+`reports/accuracy/` contains configs, full stage histories, checkpoint hashes, all
+validation calibration candidates, test metadata/per-image CSVs, paired bootstrap,
+breed comparison, training curves, 20 reviewed cases and annotation review.
+`reports/accuracy-improvement.md` has methods, commands, results and limitations.
+Full saved prediction arrays are only under `reports/generated/accuracy/`; metric
+regeneration from probabilities requires those full arrays, not the small snapshot.
+
+## Preserve this state
+
+- Dataset already downloaded/audited: `data/oxford-pets/`. Do not resplit/redownload.
+- Locked manifests: 2,944 train / 736 val / 3,669 test, seed 42, training-only stats.
+- Split contract: `0b081f28c49e40420d0bc739ec591819239966df60104055faef00e090e26a69`.
+- Pilot: `runs/pilot/pretrained-combined/best.pt`, hash
   `070175584262af20e4b6039a6161ed6e40b05864c2c494f06caf7d991a2f71c5`.
-- Split/statistics contract:
-  `0b081f28c49e40420d0bc739ec591819239966df60104055faef00e090e26a69`.
+- Completed 256px run: `runs/accuracy/finetune-256/`, 30 epochs, best epoch 27,
+  best hash `f973ca1312b9caced464f8bb6e40dc5ddc95d7a5f82866997f9e670481b31a75`.
+- Completed 384px run: `runs/accuracy/refine-384/`, eight epochs, best epoch 6,
+  best hash `92e7bc9ece64254cb1386086286a23803c15ed571758aec9fbc74f8e080b87a1`.
+- Original epoch-14 weights/logs: `runs/accuracy/finetune-256/paused-epoch-14/`.
+  Historical report evidence remains in `reports/accuracy-progress/` and Git `b94123e`.
 
-These files are local and intentionally Git-ignored. **Do not delete or overwrite
-them as setup cleanup.** Load with `torch.load(..., map_location="cpu",
-weights_only=True)` and verify epoch/config/hash before continuation.
+Proper `train --resume` is implemented and tested: optimizer/scheduler/scaler,
+config/contract checks, embedded history, RNG/loader state. It continues the
+original epoch limit. The legacy epoch-14 checkpoint lacked RNG state, so exact
+random-sequence continuity over that old pause cannot be claimed. New checkpoints
+save it. Last suite: **33 tests pass**, plus lint/format checks.
 
-## First engineering task: proper training resume
+## If the user asks for further improvement
 
-`src/petseg/training.py:train` currently rejects an existing run directory and
-supports only weight-only warm-start (`init_checkpoint`). There is no working
-`--resume` flag yet. Do not run a nonexistent command or merely warm-start from
-scratch and claim optimizer-continuous resume.
-
-Add a tested resume path to training/CLI that:
-
-1. Loads `last.pt`, verifies config/data contract and restores model, optimizer,
-   scheduler and scaler states onto the requested device.
-2. Starts at zero-based epoch 14 (logical epoch 15), retaining/appending the
-   existing 14 history records and reconstructing best/stale tracking.
-3. Preserves reduced learning rates: encoder `3e-5`, decoder `1.5e-4`.
-   ReduceLROnPlateau has `last_epoch=14`, `best=0.9561734281428408`,
-   `num_bad_epochs=0`; early-stop stale count is zero because epoch 14 was best.
-4. Continues the original maximum 30 stage epochs with patience 6. Do not
-   accidentally train 30 *additional* epochs or reset the scheduler.
-5. Sets dataset augmentation epoch to the continued global stage epoch, and saves
-   RNG/loader-generator states in future checkpoints. Existing checkpoints lack
-   these states, so bit-for-bit RNG continuity cannot be claimed for this pause.
-   Be explicit about that limitation. Preserve seed 42 and deterministic pairing.
-6. Protects the previous best checkpoint and history; use atomic checkpoint/log
-   updates and meaningful tests for resume behavior.
-
-The unfinished epoch fifteen was discarded. There is no need to recover its
-partial gradients. Commit the tested resume support before the next long run.
-
-## Then finish the accuracy study
-
-- Resume `configs/accuracy/finetune-256.yaml` in the existing run safely after
-  adding resume support. The current validation metric is on the 256px input
-  grid, not a new test result.
-- Train `configs/accuracy/refine-384.yaml` to
-  `runs/accuracy/refine-384`. Its initializer already points at the 256px best.
-- Use `petseg calibrate` on completed checkpoints, validation only. See exact
-  commands in `reports/accuracy-improvement.md`. It tests input sizes 256/384/512,
-  thresholds 0.2..0.8 by 0.025, with/without horizontal-flip averaging.
-- Select the highest native-grid validation IoU candidate and copy its exported
-  `calibrated.pt` to `runs/accuracy/selected.pt` **before** inspecting new test
-  results. Exports include threshold, inference size and TTA policy.
-- Evaluate pilot and selected model using `petseg evaluate --native` on the same
-  original annotation grid. Preserve old pilot 128px metrics separately. The
-  comparison helper rejects mixing input-grid and native metrics.
-- Store small report evidence under version control, full predictions under
-  ignored `reports/generated/accuracy/`, weights under ignored `runs/accuracy/`.
-- Update examples/report/README and restart the demo with the selected model only
-  after the user has resumed work. The prior demo used the pilot at port 7860.
-  It is stopped now; any browser page left open is stale after shutdown.
-- Validate actual browser upload/download behavior and original PNG dimensions,
-  run relevant tests, and commit the completed results.
-
-## Existing capabilities and guardrails
-
-- Last complete suite: **32 passed** (`.venv/bin/python -m pytest -q`).
-- `scripts/plot_training.py` regenerates stage loss/IoU/LR figures.
-- Shared `src/petseg/prediction.py` handles flip alignment and inverse letterbox.
-- `calibration.py` uses exact masked per-image threshold sweeps and only `val.txt`.
-- New inference checkpoints can separate training size from `inference_size`.
-- Normalization must remain training-only. Trimaps: 1 foreground, 2 background,
-  3 ignored. Exclude borders/padding from loss and metrics. Never tune on test.
-- The official test was already inspected during the pilot; report follow-up
-  scores honestly as repeated benchmark measurements.
-- Do not commit dataset, checkpoints, `.venv`, caches or full generated outputs.
-- The user specifically asked why there were no commits: keep logical changes
-  and measured evidence committed, while preserving their unrelated changes.
-
-The task is **paused**, not complete. No 384px training, validation calibration,
-or new-model test evaluation had run when this note was written.
+Do not call this the best possible accuracy. Potential follow-up studies include
+repeat seeds, genuinely new photos, better edge/alpha supervision and architectural
+comparisons, each with a validation-only selection protocol and an explicit scope.
+The current official test was previously inspected and now evaluated again; it is
+reporting evidence, not a tuning set. Preserve all eight reviewed annotation
+anomalies in primary scores; do not silently fix/exclude them to raise numbers.
+Actual failures remain (missing Chihuahua body, Pomeranian background, dark
+occlusion), and perfect region IoU does not establish perfect fur edges because
+the ambiguous trimap border is ignored. No further work is required for the
+completed study unless the user asks for a new follow-up.
