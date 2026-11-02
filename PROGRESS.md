@@ -1,11 +1,14 @@
 # Progress report — resumed 2026-11-02
 
 The user resumed the accuracy study on 2026-11-02. Resume support is implemented
-and committed as `dace3ed`; all 33 tests pass. Training has been launched from
-logical epoch 15 with the saved optimizer/scheduler and original 30-epoch limit.
-See `runs/accuracy/finetune-256/training.log` for live progress. The demo remains
-stopped until final model selection. The historical pause state below is retained
-as evidence; untouched copies are under the ignored `paused-epoch-14/` run folder.
+and committed as `dace3ed`; all 33 tests pass. The 256px stage completed all 30
+epochs; its best was epoch 27 at **0.9640818123 validation IoU** on the 256px input
+grid. Evidence is saved in `reports/accuracy/`. The 384px refinement is now running;
+its live log is `runs/accuracy/refine-384-training.log`. Calibration and final
+native-grid test comparison remain pending. The demo is still stopped.
+
+The historical pause state below is retained as evidence; untouched checkpoint
+and log copies are under `runs/accuracy/finetune-256/paused-epoch-14/`.
 
 ## Implemented and committed
 

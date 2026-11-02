@@ -1,13 +1,16 @@
 # Current continuation status — 2026-11-02
 
 The user resumed work. Resume support is complete and committed as `dace3ed`
-(33 passing tests), and the 256px run was launched with `--resume` from epoch 15.
-Before starting another process, check for an existing training job and inspect
-`runs/accuracy/finetune-256/training.log` and `history.json`. Do not run two jobs
-against the same output. The original epoch-14 checkpoints/logs are preserved at
-`runs/accuracy/finetune-256/paused-epoch-14/` with the hashes recorded below.
-Continue the study protocol after the 256px stage stops. The older notes below
-explain the original pause; the "first engineering task" is now complete.
+(33 passing tests). The 256px stage completed all 30 epochs; best epoch 27 scored
+0.9640818123 validation IoU (256px grid). History/config/hash evidence is in
+`reports/accuracy/`. The 384px stage has been launched; check for an existing
+process and inspect `runs/accuracy/refine-384-training.log` before launching
+anything. Do not run two jobs against the same output. After refinement, calibrate
+both best checkpoints on validation, select/export the winner BEFORE new test
+inspection, then run native-grid pilot/selected evaluation and update the demo.
+The original epoch-14 checkpoints/logs are preserved under
+`runs/accuracy/finetune-256/paused-epoch-14/` with the historical hashes below.
+The older "first engineering task" is complete.
 
 # Resume note for the next Codex session
 

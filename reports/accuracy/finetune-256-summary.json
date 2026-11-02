@@ -1,0 +1,12 @@
+{
+  "stage": "finetune-256",
+  "completed_epochs": 30,
+  "best_epoch": 27,
+  "best_validation_iou": 0.9640818122702556,
+  "metric_space": "256px input grid",
+  "best_checkpoint_sha256": "f973ca1312b9caced464f8bb6e40dc5ddc95d7a5f82866997f9e670481b31a75",
+  "last_checkpoint_sha256": "7e5248ab297706d04c0a0a969810c6a3893760a515fb5378382fc5e8f8aa2c95",
+  "contract_hash": "0b081f28c49e40420d0bc739ec591819239966df60104055faef00e090e26a69",
+  "resume_commit": "dace3ed",
+  "legacy_rng_discontinuity": true
+}
