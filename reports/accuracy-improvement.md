@@ -1,11 +1,16 @@
 # Accuracy improvement study
 
-**Resumed 2026-11-02:** proper optimizer/scheduler continuation is implemented
-and tested (33 tests). The preserved epoch-14 best/last checkpoints and logs are
-copied under `runs/accuracy/finetune-256/paused-epoch-14/`. The legacy checkpoint
-lacks RNG state, so exact random-sequence continuity across that pause cannot be
-claimed. New checkpoints embed history and Python/NumPy/Torch/accelerator/loader
-RNG states, allowing recovery even if the separate history JSON write is interrupted.
+**Study resumed 2026-11-02; in progress 2026-11-03.** Proper optimizer/scheduler
+continuation is implemented and tested (33 tests). The 256px stage completed 30
+epochs; epoch 27 was best at 0.9640818123 input-grid validation IoU. Its native-grid
+validation calibration selected 256px input, horizontal-flip averaging and threshold
+0.525: **0.9672406263 mean IoU / 0.9819132955 Dice** across 736 images. The 384px
+refinement is running. These are validation measurements; no new test score yet.
+
+The original epoch-14 checkpoints/logs remain copied under
+`runs/accuracy/finetune-256/paused-epoch-14/`. The legacy checkpoint lacks RNG state,
+so exact random-sequence continuity across that pause cannot be claimed. New
+checkpoints embed history and Python/NumPy/Torch/accelerator/loader RNG states.
 
 The starting checkpoint is the one-epoch, 128px pretrained-combined pilot.
 Its published input-grid test IoU is 0.8402. The original official test has already
