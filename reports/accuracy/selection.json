@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-03",
+  "recorded_at_utc": "2026-11-02T20:56:38.393686+00:00",
+  "rule": "Highest native-grid mean validation IoU across the two completed calibrated stage checkpoints",
+  "split": "val",
+  "metric_space": "original",
+  "test_results_inspected_before_selection": false,
+  "winning_stage": "refine-384",
+  "checkpoint": "runs/accuracy/selected.pt",
+  "checkpoint_sha256": "6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865",
+  "source": "runs/accuracy/refine-384/calibrated.pt",
+  "candidates": {
+    "finetune-256": {
+      "size": 256,
+      "horizontal_flip_tta": true,
+      "threshold": 0.525,
+      "mean_iou": 0.9672406263111931,
+      "mean_dice": 0.9819132955332215,
+      "count": 736
+    },
+    "refine-384": {
+      "size": 384,
+      "horizontal_flip_tta": true,
+      "threshold": 0.475,
+      "mean_iou": 0.9698066408048313,
+      "mean_dice": 0.9832429278237136,
+      "count": 736
+    }
+  },
+  "selected": {
+    "size": 384,
+    "horizontal_flip_tta": true,
+    "threshold": 0.475,
+    "mean_iou": 0.9698066408048313,
+    "mean_dice": 0.9832429278237136,
+    "count": 736
+  },
+  "contract_hash": "0b081f28c49e40420d0bc739ec591819239966df60104055faef00e090e26a69"
+}

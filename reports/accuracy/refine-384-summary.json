@@ -1,0 +1,15 @@
+{
+  "stage": "refine-384",
+  "completed_epochs": 8,
+  "best_epoch": 6,
+  "best_validation_iou": 0.9679561294661133,
+  "metric_space": "384px input grid",
+  "best_checkpoint_sha256": "92e7bc9ece64254cb1386086286a23803c15ed571758aec9fbc74f8e080b87a1",
+  "last_checkpoint_sha256": "ae5465458397ca3bbdc95a131560ddf724d19671e70231965ec2cb7a961ed3c6",
+  "contract_hash": "0b081f28c49e40420d0bc739ec591819239966df60104055faef00e090e26a69",
+  "initialization": {
+    "path": "runs/accuracy/finetune-256/best.pt",
+    "sha256": "f973ca1312b9caced464f8bb6e40dc5ddc95d7a5f82866997f9e670481b31a75",
+    "epoch": 27
+  }
+}
