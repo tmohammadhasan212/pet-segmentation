@@ -1,0 +1,220 @@
+{
+  "checkpoint_sha256": "6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865",
+  "contract_hash": "0b081f28c49e40420d0bc739ec591819239966df60104055faef00e090e26a69",
+  "split": "val",
+  "count": 50,
+  "device": "mps",
+  "threads": 4,
+  "platform": "macOS-26.5-arm64-arm-64bit-Mach-O",
+  "torch": "2.9.0",
+  "inference_size": 384,
+  "horizontal_flip_tta": true,
+  "threshold": 0.475,
+  "scope": "Prediction after file decoding: preprocessing, forward/sigmoid, selected flip averaging, CPU transfer, inverse resize and output construction; excludes disk exports/browser/upload/model load; 3 warmups",
+  "mean_ms": 52.634349200016004,
+  "median_ms": 51.67552049988444,
+  "p90_ms": 54.03029590015649,
+  "per_image": [
+    {
+      "id": "Abyssinian_10",
+      "ms": 55.24058299852186
+    },
+    {
+      "id": "Abyssinian_107",
+      "ms": 55.530374998852494
+    },
+    {
+      "id": "Abyssinian_108",
+      "ms": 53.061708000313956
+    },
+    {
+      "id": "Abyssinian_112",
+      "ms": 53.4065419997205
+    },
+    {
+      "id": "Abyssinian_132",
+      "ms": 51.994708001075196
+    },
+    {
+      "id": "Abyssinian_136",
+      "ms": 52.18708300162689
+    },
+    {
+      "id": "Abyssinian_137",
+      "ms": 78.12504200046533
+    },
+    {
+      "id": "Abyssinian_14",
+      "ms": 51.694124998903135
+    },
+    {
+      "id": "Abyssinian_142",
+      "ms": 51.68545800006541
+    },
+    {
+      "id": "Abyssinian_144",
+      "ms": 51.75591599981999
+    },
+    {
+      "id": "Abyssinian_15",
+      "ms": 51.55725000076927
+    },
+    {
+      "id": "Abyssinian_150",
+      "ms": 51.79279200092424
+    },
+    {
+      "id": "Abyssinian_159",
+      "ms": 50.48720899867476
+    },
+    {
+      "id": "Abyssinian_165",
+      "ms": 51.50041699926078
+    },
+    {
+      "id": "Abyssinian_167",
+      "ms": 49.92050000146264
+    },
+    {
+      "id": "Abyssinian_168",
+      "ms": 50.49391699867556
+    },
+    {
+      "id": "Abyssinian_170",
+      "ms": 74.3683750006312
+    },
+    {
+      "id": "Abyssinian_173",
+      "ms": 50.60400000002119
+    },
+    {
+      "id": "Abyssinian_185",
+      "ms": 50.700707999567385
+    },
+    {
+      "id": "Abyssinian_19",
+      "ms": 52.66712500088033
+    },
+    {
+      "id": "Bengal_101",
+      "ms": 53.54724999961036
+    },
+    {
+      "id": "Bengal_103",
+      "ms": 52.99166700024216
+    },
+    {
+      "id": "Bengal_104",
+      "ms": 54.22983400058001
+    },
+    {
+      "id": "Bengal_111",
+      "ms": 54.00812500010943
+    },
+    {
+      "id": "Bengal_12",
+      "ms": 51.49091699968267
+    },
+    {
+      "id": "Bengal_121",
+      "ms": 51.81929200080049
+    },
+    {
+      "id": "Bengal_122",
+      "ms": 51.84112500137417
+    },
+    {
+      "id": "Bengal_123",
+      "ms": 52.02320800162852
+    },
+    {
+      "id": "Bengal_127",
+      "ms": 52.21816699850024
+    },
+    {
+      "id": "Bengal_134",
+      "ms": 50.643333001062274
+    },
+    {
+      "id": "Bengal_138",
+      "ms": 51.125125000908156
+    },
+    {
+      "id": "Bengal_14",
+      "ms": 51.34100000032049
+    },
+    {
+      "id": "Bengal_147",
+      "ms": 49.851583999043214
+    },
+    {
+      "id": "Bengal_151",
+      "ms": 49.579791999349254
+    },
+    {
+      "id": "Bengal_155",
+      "ms": 49.65641699891421
+    },
+    {
+      "id": "Bengal_160",
+      "ms": 49.5597919998545
+    },
+    {
+      "id": "Bengal_162",
+      "ms": 49.74212500019348
+    },
+    {
+      "id": "Bengal_17",
+      "ms": 51.38391699983913
+    },
+    {
+      "id": "Bengal_171",
+      "ms": 49.75349999949685
+    },
+    {
+      "id": "Bengal_177",
+      "ms": 49.986124999122694
+    },
+    {
+      "id": "Birman_109",
+      "ms": 51.8547089995991
+    },
+    {
+      "id": "Birman_112",
+      "ms": 51.665582999703474
+    },
+    {
+      "id": "Birman_116",
+      "ms": 51.55200000081095
+    },
+    {
+      "id": "Birman_117",
+      "ms": 51.72012500042911
+    },
+    {
+      "id": "Birman_120",
+      "ms": 51.665541001057136
+    },
+    {
+      "id": "Birman_129",
+      "ms": 51.98279099931824
+    },
+    {
+      "id": "Birman_13",
+      "ms": 51.33191599998099
+    },
+    {
+      "id": "Birman_133",
+      "ms": 51.73095799909788
+    },
+    {
+      "id": "Birman_134",
+      "ms": 51.277167000080226
+    },
+    {
+      "id": "Birman_135",
+      "ms": 51.37054199985869
+    }
+  ],
+  "peak_process_rss_bytes": 563019776
+}

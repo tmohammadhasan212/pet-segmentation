@@ -1,14 +1,21 @@
 # Progress report — resumed 2026-11-02
 
-The user resumed the accuracy study on 2026-11-02. Resume support is implemented
-and committed as `dace3ed`; all 33 tests pass. The 256px stage completed all 30
-epochs; its best was epoch 27 at **0.9640818123 validation IoU** on the 256px input
-grid. Evidence is saved in `reports/accuracy/`. The 384px refinement is now running;
-its live log is `runs/accuracy/refine-384-training.log`. Calibration and final
-native-grid test comparison remain pending. The demo is still stopped.
+The user resumed the study on 2026-11-02. Both stages are now complete: 30 epochs
+at 256px (best epoch 27, input-grid validation IoU 0.9640818123), then eight epochs
+at 384px (best epoch 6, input-grid validation IoU 0.9679561295). All 33 tests pass.
 
-The historical pause state below is retained as evidence; untouched checkpoint
-and log copies are under `runs/accuracy/finetune-256/paused-epoch-14/`.
+**Final selection was frozen on validation before new test evaluation**, in
+`reports/accuracy/selection.json` (commits `5715e13`, `8658836`). Winner:
+`runs/accuracy/selected.pt`, 384px input, horizontal-flip averaging, threshold
+0.475; native-grid validation IoU **0.9698066408**, Dice **0.9832429278**.
+Selected SHA-256: `6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865`.
+
+Native-grid test evaluations are running sequentially (pilot then selected), log:
+`runs/accuracy/native-evaluations.log`. Check for an existing process before
+starting anything. Full outputs: `reports/generated/accuracy/`. New test results
+must remain reporting-only; do not retune on them. Demo is still stopped pending
+evaluation/verification. Historical pause evidence is preserved below and in
+`runs/accuracy/finetune-256/paused-epoch-14/`.
 
 ## Implemented and committed
 

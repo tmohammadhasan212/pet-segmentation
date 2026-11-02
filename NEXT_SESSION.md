@@ -1,16 +1,17 @@
 # Current continuation status — 2026-11-02
 
-The user resumed work. Resume support is complete and committed as `dace3ed`
-(33 passing tests). The 256px stage completed all 30 epochs; best epoch 27 scored
-0.9640818123 validation IoU (256px grid). History/config/hash evidence is in
-`reports/accuracy/`. The 384px stage has been launched; check for an existing
-process and inspect `runs/accuracy/refine-384-training.log` before launching
-anything. Do not run two jobs against the same output. After refinement, calibrate
-both best checkpoints on validation, select/export the winner BEFORE new test
-inspection, then run native-grid pilot/selected evaluation and update the demo.
-The original epoch-14 checkpoints/logs are preserved under
-`runs/accuracy/finetune-256/paused-epoch-14/` with the historical hashes below.
-The older "first engineering task" is complete.
+Both training stages and validation calibration are complete. The frozen winner
+is `runs/accuracy/selected.pt` (SHA-256
+`6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865`),
+384px input, flip averaging, threshold 0.475; native validation IoU 0.9698066408.
+See `reports/accuracy/selection.json`. New test evaluations are running sequentially
+(pilot then selected); check process state and `runs/accuracy/native-evaluations.log`
+before launching a duplicate. Output dirs: `reports/generated/accuracy/pilot-native`
+and `selected-native`. After they finish, snapshot small results/reviewed galleries,
+write fair native-grid comparison/report, update demo/examples, check browser
+upload/download, and commit completed evidence. Tests/lint/format passed (33 tests).
+Do not retune using test outcomes. Legacy epoch-14 checkpoint backups are preserved.
+The original pause notes below are historical; resume support and training are done.
 
 # Resume note for the next Codex session
 

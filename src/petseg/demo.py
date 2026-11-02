@@ -24,7 +24,7 @@ def create_demo(checkpoint, device="auto"):
             str(directory / name)
             for name in ("cutout.png", "mask.png", "probability.png", "probability.npy")
         ]
-        status = f"Model: {result['version']} · Threshold: {threshold:.2f} · Inference: {result['inference_ms']:.1f} ms · Device: {predictor.device}"
+        status = f"Model: {result['version']} · Threshold: {threshold:.3f} · Inference: {result['inference_ms']:.1f} ms · Device: {predictor.device}"
         return (
             result["original"],
             result["heatmap"],
@@ -47,7 +47,7 @@ def create_demo(checkpoint, device="auto"):
                     0,
                     1,
                     value=predictor.checkpoint.get("threshold", 0.5),
-                    step=0.01,
+                    step=0.005,
                     label="Foreground threshold",
                 )
                 run = gr.Button("Remove background", variant="primary")
