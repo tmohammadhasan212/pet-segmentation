@@ -30,3 +30,13 @@ size; the selected result removes the pilot's detached floor patch.
 `accuracy/demo-screenshot.jpg` records the verified local upload/download flow.
 These use the same validation photo `Abyssinian_10`; the dataset attribution,
 CC BY-SA 4.0 terms and original image-owner rights above apply to all derivatives.
+
+The README's primary example is now `accuracy/readme-cat-demo.png`: original photo
+beside a freshly generated selected-model cutout. The checkerboard is display-only;
+`accuracy/readme-cat-cutout.png` retains actual transparency. The paired mask and
+heatmap are `accuracy/readme-cat-mask.png` and `accuracy/readme-cat-heatmap.png`.
+`accuracy/readme-cat-example.json` records checkpoint SHA-256, threshold, inference
+size, flip policy and output dimensions. The fresh cutout was verified pixel-for-pixel
+against the earlier selected-model browser download. All use `Abyssinian_10`; the
+same Oxford-IIIT Pet attribution, CC BY-SA 4.0 terms and image-owner rights apply.
+Historical pilot artifacts and the three-way comparison remain separately labeled.

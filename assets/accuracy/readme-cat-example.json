@@ -1,0 +1,14 @@
+{
+  "model_version": "petseg-0.1.0:6690cd31b0d0",
+  "checkpoint_sha256": "6690cd31b0d0c00211a3fbd74d1614fdeb994d0bc5f898761a8d0d87911be865",
+  "threshold": 0.475,
+  "inference_size": 384,
+  "horizontal_flip_tta": true,
+  "photo": "Abyssinian_10 (validation)",
+  "output_size": [
+    375,
+    500
+  ],
+  "output_mode": "RGBA",
+  "source": "Fresh petseg predict output; checkerboard is display-only, exported PNG remains transparent."
+}

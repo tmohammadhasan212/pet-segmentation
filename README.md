@@ -1,32 +1,44 @@
 # Pet foreground segmentation
 
-A PyTorch pipeline for separating cats and dogs from backgrounds: a handwritten
-U-Net, a ResNet18 encoder U-Net, three masked losses, a central ellipse baseline,
-locked Oxford-IIIT Pet splits, reproducible evaluation and a local upload demo.
-The CLI exports original-size probabilities, a binary mask and a transparent PNG.
+Separate cats and dogs from their backgrounds with a PyTorch U-Net and a local
+upload demo. The project includes a handwritten U-Net, a ResNet18 encoder variant,
+masked losses, reproducible training and original-size transparent PNG exports.
 
-**Status:** the full dataset is audited, locked splits are preserved, and
-**33 automated tests pass**. The completed accuracy study achieved **96.76% mean
-foreground IoU / 98.05% Dice** on all 3,669 official test images at original
-annotation resolution, up from the pilot's **84.03% IoU / 90.26% Dice** on the
-same grid. The model and inference settings were selected using validation only.
+The completed accuracy study achieved **96.76% mean foreground IoU / 98.05% Dice**
+on all **3,669 official Oxford-IIIT Pet test images**, scored at original annotation
+resolution. The model and inference settings were selected using validation only.
 
-| Original-resolution test benchmark | IoU | Dice |
+| Original-resolution test benchmark | Mean IoU | Mean Dice |
 |---|---:|---:|
 | One-epoch pretrained pilot | 0.8403 | 0.9026 |
-| Refined model, 384px + flip averaging | **0.9676** | **0.9805** |
+| Selected model: 384px + flip averaging | **0.9676** | **0.9805** |
 
-The selected model uses threshold **0.475** and averages ordinary/flipped
-predictions. See the [full accuracy report](reports/accuracy-improvement.md),
-[reproducible evidence](reports/accuracy/README.md), and
-[20 reviewed examples](reports/accuracy/selected-native/gallery.html).
-The earlier six-model/loss pilot remains in the
-[original report](reports/experiment-report.md). Test results are repeated public
-benchmark measurements; the test was already inspected during the pilot.
+The selected system uses a **0.475 threshold** and averages ordinary and
+horizontally flipped predictions. Both rows use identical test IDs and ignored-pixel
+rules. These are repeated public benchmark measurements; the test was already
+inspected during the pilot. **33 automated tests pass.** See the
+[full accuracy report](reports/accuracy-improvement.md),
+[measurement files](reports/accuracy/README.md) and
+[training curves](reports/accuracy/training.png).
 
-## Environment
+## Current demo example
 
-Python 3.11–3.13 (tested with 3.13). From the repository root:
+![Original cat photograph and freshly generated output from the selected model](assets/accuracy/readme-cat-demo.png)
+
+This is validation photo `Abyssinian_10`, freshly processed with the selected model
+`6690cd31b0d0`, 384px input, flip averaging and threshold 0.475. The right panel
+shows the **current model only**; its checkerboard illustrates transparency.
+The [exported cutout](assets/accuracy/readme-cat-cutout.png) is a **375×500 RGBA PNG**,
+with the same dimensions as the original photograph. Fine hair remains approximate.
+[Example provenance](assets/accuracy/readme-cat-example.json) and
+[image attribution](assets/README.md) are saved alongside it. The
+[historical original/pilot/selected comparison](assets/accuracy/example-comparison.png)
+is retained separately.
+
+## Setup and weights
+
+Python 3.11–3.13 is supported; the tested environment uses Python 3.13. From the
+repository root:
 
 ```bash
 python3.13 -m venv .venv
@@ -36,30 +48,62 @@ python -m pytest -q
 petseg --help
 ```
 
-Direct dependencies are pinned in `pyproject.toml`. The tested environment is
-recorded in `requirements-lock.txt` for an exact transitive dependency snapshot.
-For reproduction on Python 3.13, install it before the editable package
-(other Python versions should resolve compatible transitive versions from pyproject.toml):
+Direct dependencies are pinned in `pyproject.toml`. For the exact tested Python
+3.13 dependency versions, install `requirements-lock.txt` before the editable package:
 
 ```bash
 python -m pip install -r requirements-lock.txt
 python -m pip install -e . --no-deps
 ```
 
-PyTorch auto-selects CUDA, Apple MPS, then CPU. CUDA mixed precision is enabled
-by config; CPU/MPS use float32. Seeds and deterministic CuDNN settings constrain
-randomness but exact equality across accelerator types is not guaranteed.
+**Model weights are not included in this GitHub repository and have not been
+published for download.** On the original project machine, the completed model is
+at `runs/accuracy/selected.pt`. A fresh clone needs that checkpoint copied from an
+existing run or recreated through the training workflow below before prediction
+or the demo can run. Datasets, checkpoints, environments and full generated
+predictions are excluded from Git; small result snapshots and examples are committed.
 
-To continue an interrupted run without resetting its optimizer, schedule or epoch
-limit, use the same config and output directory with `--resume`:
+PyTorch auto-selects CUDA, Apple MPS, then CPU. CUDA mixed precision is configurable;
+CPU/MPS use float32. Seeds constrain randomness, but exact equality across hardware
+and training runs is not guaranteed.
+
+## Run the selected model
+
+Once `runs/accuracy/selected.pt` is present:
 
 ```bash
-petseg train --config configs/accuracy/finetune-256.yaml --output runs/accuracy/finetune-256 --resume
+petseg demo --checkpoint runs/accuracy/selected.pt
+petseg predict /path/to/pet.jpg --checkpoint runs/accuracy/selected.pt --output outputs/pet
 ```
 
-Resume validates the saved config and data contract and appends history. New
-checkpoints include RNG and loader state; the original epoch-14 checkpoint predates
-that support and cannot recover the exact random sequence across its old pause.
+Open [the local demo](http://127.0.0.1:7860/), upload a photograph and click
+**Remove background**. The checkpoint automatically supplies the 384px input size,
+flip averaging and 0.475 threshold. The threshold control can be adjusted for an
+individual cutout. Original, probability, binary mask and cutout appear with model
+version and inference time. Download the PNG cutout, mask, 16-bit probability PNG
+or raw probabilities. The server binds to localhost without a public sharing link.
+
+<details>
+<summary>Verified demo screenshot using the selected model</summary>
+
+![Verified selected-model upload demo at threshold 0.475](assets/accuracy/demo-screenshot.jpg)
+
+The browser upload and actual PNG download were verified using `Abyssinian_10`;
+see [verification details](reports/accuracy/browser-verification.json).
+
+</details>
+
+CLI output files are `probability.npy` (float32), `probability.png` (16-bit),
+`heatmap.png`, `mask.png` (0/255), `cutout.png` (RGBA, binary alpha), and
+`prediction.json` (version, threshold, time). Predictions preserve aspect ratio
+and restore EXIF-oriented original dimensions. JPEG, PNG, WebP, BMP and single-frame
+TIFF are supported; invalid, tiny or over-40-megapixel inputs fail clearly.
+
+On the same 50 validation photos, after three warmups, the selected prediction
+pipeline averaged **210.98 ms on CPU** (four threads) and **52.63 ms on Apple MPS**.
+This includes preprocessing, model passes, CPU transfer, inverse resizing and output
+construction, after file decoding; it excludes model loading, exports and browser
+upload overhead. Raw timing evidence and scope are in the [accuracy report](reports/accuracy-improvement.md).
 
 ## Data
 
@@ -68,65 +112,102 @@ petseg prepare --download --data-root data/oxford-pets --manifests data/manifest
 petseg audit --data-root data/oxford-pets
 ```
 
-Or extract both official archives manually before running `prepare` without
-`--download`. See [DATA.md](DATA.md) for placement, citation, use terms, label
-mapping, split rules and normalization. Data/checkpoints are excluded from Git.
-The prepared manifests and statistics in `data/manifests/` lock 2,944 training,
-736 validation and 3,669 test images. Preserve them in version control. The audit
-fails on missing/corrupt masks, mismatched dimensions or unexpected trimap labels.
+Alternatively, extract both official archives before running `prepare` without
+`--download`. [DATA.md](DATA.md) records placement, citation, terms, label mapping,
+split rules and normalization. The committed manifests lock **2,944 training /
+736 validation / 3,669 test images**, with seed 42. Existing complete manifests are
+verified rather than silently replaced. The full official dataset passed audit;
+missing/corrupt pairs, mismatched dimensions or unexpected labels fail the check.
 
-Value 3 is ignored in training and scoring; it is also used for letterbox padding.
-Only train pixels determine mean/std. Paired flips/rotations are reproducible and
-labels use nearest-neighbor interpolation. Validation/test transforms are fixed.
+Trimap labels are **1 foreground / 2 background / 3 ignored**. Label 3 and letterbox
+padding are excluded from loss and metric denominators. Normalization uses training
+pixels only. Paired image/mask transforms remain aligned; label resizing uses nearest
+neighbor interpolation. Validation/test transforms are deterministic.
 
-## Train and compare
+## Reproduce the accuracy study
 
-```bash
-petseg train --config configs/scratch-combined.yaml --output runs/scratch-combined
-petseg train --config configs/pretrained-combined.yaml --output runs/pretrained-combined
-petseg evaluate --output reports/generated/ellipse
-petseg evaluate --checkpoint runs/scratch-combined/best.pt --output reports/generated/scratch-combined
-petseg evaluate --checkpoint runs/pretrained-combined/best.pt --output reports/generated/pretrained-combined
-petseg report reports/generated/ellipse reports/generated/scratch-combined reports/generated/pretrained-combined
-```
+The completed study starts from the one-epoch pretrained-combined pilot, fine-tunes
+for **30 epochs at 256px**, then refines for **eight epochs at 384px**. Best epochs
+were 27 and 6 respectively. All model selection uses validation; test evaluation
+follows selection.
 
-The pretrained variant downloads torchvision's ImageNet ResNet18 encoder weights
-on its first training run. Both variants use training-only normalization. Change
-`loss` among `bce`, `dice`, `combined` through the six supplied configs. Change
-optimizer, schedule, learning rate, batch size, size, seed, augmentation, epochs,
-patience, device or AMP in YAML. Use a **fresh output directory** per run; existing
-runs/results are protected against overwriting. Logs, config, audit and best/last
-checkpoints are saved. Best means highest validation macro IoU at fixed threshold
-0.5. Early stopping uses configured patience. Checkpoints include optimizer,
-scheduler and scaler states for inspection; automatic training resume is not
-implemented.
-
-Run all six model/loss combinations plus the prior:
+Run the following only for a new reproduction with fresh output paths. Existing
+run directories and evaluation results are protected from overwriting. The accuracy
+configs target Apple MPS; change `device` in the YAMLs for CPU or CUDA hardware.
+Also replace `--device mps` in the calibration/evaluation commands with `cpu` or
+`cuda` as appropriate. The first pretrained run downloads torchvision's ImageNet
+ResNet18 encoder weights.
 
 ```bash
-python scripts/run_experiments.py
-# Short CPU pilot: one epoch, 128px, scratch base channels 16
-python scripts/run_experiments.py --config-dir configs/pilot --runs-root runs/pilot --report-root reports/generated/pilot --device cpu
+petseg train --config configs/pilot/pretrained-combined.yaml --output runs/pilot/pretrained-combined
+petseg train --config configs/accuracy/finetune-256.yaml --output runs/accuracy/finetune-256
+petseg train --config configs/accuracy/refine-384.yaml --output runs/accuracy/refine-384
+petseg calibrate --checkpoint runs/accuracy/finetune-256/best.pt --sizes 256 384 512 --device mps --output runs/accuracy/finetune-256/calibration.json --export runs/accuracy/finetune-256/calibrated.pt
+petseg calibrate --checkpoint runs/accuracy/refine-384/best.pt --sizes 256 384 512 --device mps --output runs/accuracy/refine-384/calibration.json --export runs/accuracy/refine-384/calibrated.pt
 ```
 
-Pilot results are not a converged benchmark and must be kept separate from
-the full 256px experiments. The test set is final reporting only. Do not tune experiments using earlier test
-results. For blinded comparison, train all six configs before evaluating any.
-Every result records split/statistics hash, checkpoint hash, parameter count,
-input size, threshold, device and memory. Region scores are macro per-image;
-`per_image.csv` retains the full distribution and breed. Summaries include
-quantiles, standard deviation and foreground-size bins. Boundary F1 is separate,
-at 2 resized pixels tolerance; ignored bands limit its coverage.
+Calibration scores all 736 validation images on their original annotation grid,
+comparing input sizes 256/384/512, with/without flip averaging and 25 thresholds
+from 0.2 to 0.8. Freeze the candidate with highest native-grid validation IoU:
 
-CPU and accelerator latency must be measured separately on available hardware:
+```python
+import json
+import shutil
+from pathlib import Path
+
+stages = [Path("runs/accuracy/finetune-256"), Path("runs/accuracy/refine-384")]
+
+def validation_iou(stage):
+    report = json.loads((stage / "calibration.json").read_text())
+    return report["selected"]["mean_iou"]
+
+winner = max(stages, key=validation_iou)
+target = Path("runs/accuracy/selected.pt")
+if target.exists():
+    raise FileExistsError("Preserve the existing selected checkpoint; choose a new path.")
+shutil.copy2(winner / "calibrated.pt", target)
+print("Selected from validation:", winner)
+```
+
+In the measured study, the refined model won: **0.969807 validation IoU / 0.983243
+Dice**, using 384px, flip averaging and threshold 0.475. The completed 256px candidate
+scored 0.967241 native validation IoU. The [selection record](reports/accuracy/selection.json)
+was committed before new test evaluation. The exported checkpoint stores the
+selected inference settings and provenance.
+
+Evaluate the frozen winner and pilot on the **same original-resolution grid**:
 
 ```bash
-petseg evaluate --checkpoint runs/scratch-combined/best.pt --device cpu --output reports/generated/scratch-cpu
-# Use cuda or mps only on a machine with that accelerator:
-petseg evaluate --checkpoint runs/scratch-combined/best.pt --device mps --output reports/generated/scratch-mps
+petseg evaluate --checkpoint runs/pilot/pretrained-combined/best.pt --native --device mps --output reports/generated/accuracy/pilot-native
+petseg evaluate --checkpoint runs/accuracy/selected.pt --native --device mps --output reports/generated/accuracy/selected-native
+petseg report reports/generated/accuracy/pilot-native reports/generated/accuracy/selected-native --output reports/generated/accuracy/results.md
 ```
 
-| Pilot experiment (one epoch, 128px) | Mean IoU | Mean Dice |
+Training supports configurable loss, optimizer, schedule, learning rate, batch size,
+resolution, seed, augmentation, early stopping and AMP. Separate encoder/decoder
+learning rates are used in this study. Each epoch saves config/history and atomic
+best/last checkpoints; training-stage best means highest validation macro IoU at
+threshold 0.5. Calibration then selects the inference policy.
+
+**Resume is implemented.** Continue an interrupted run using the same config/output:
+
+```bash
+petseg train --config configs/accuracy/finetune-256.yaml --output runs/accuracy/finetune-256 --resume
+```
+
+This restores model, optimizer, scheduler and scaler, validates config/data contract,
+appends history and continues the original epoch budget. New checkpoints save RNG
+and loader state. The historical epoch-14 checkpoint predates RNG-state saving, so
+exact random-sequence continuity across that old pause cannot be recovered. See the
+[training report](reports/accuracy-improvement.md) for the recorded resume history.
+
+## Original model/loss pilot
+
+The earlier experiment trained all six combinations for one epoch at 128px before
+test evaluation. This table uses the **128px input grid**, rather than the native
+grid of the headline comparison above:
+
+| Pilot experiment | Mean IoU | Mean Dice |
 |---|---:|---:|
 | Central ellipse | 0.4762 | 0.6193 |
 | Scratch · BCE | 0.5842 | 0.7207 |
@@ -134,98 +215,61 @@ petseg evaluate --checkpoint runs/scratch-combined/best.pt --device mps --output
 | Scratch · combined | 0.5975 | 0.7312 |
 | ResNet18 U-Net · BCE | 0.8346 | 0.9001 |
 | ResNet18 U-Net · Dice | 0.8147 | 0.8856 |
-| ResNet18 U-Net · combined | **0.8402** | **0.9025** |
+| ResNet18 U-Net · combined | 0.8402 | 0.9025 |
 
-Pilot scratch base channels are 16 (1.96M parameters), versus 14.36M for the
-pretrained variant. These are undertrained, unequal-capacity models, not an
-isolated measurement of pretraining or a converged benchmark. The full six-config,
-60-epoch study and repeated seeds have **not** been run; the follow-up fine-tunes
-the combined-loss pretrained model for 30 epochs at 256px and eight at 384px. See the
-[complete measurements](reports/pilot/results.md), [distributions](reports/pilot/results.png)
-and [reviewed error gallery](reports/pilot/pretrained-combined/gallery.html).
-
-Never substitute synthetic-test scores for this table. The generated comparison
-in `reports/generated/results.md` contains actual measurements after evaluation,
-along with `results.png` showing per-image IoU/Dice distributions.
-
-## Cutouts and upload demo
-
-The validation-selected checkpoint is available locally at
-`runs/accuracy/selected.pt` (ignored by Git). Its threshold, input size and
-flip-averaging policy are loaded automatically:
+Pilot scratch models use base channels 16 (1.96M parameters), versus 14.36M for the
+pretrained variant. These are undertrained, unequal-capacity comparisons; the full
+six-config 60-epoch study and repeated seeds have not been run. Historical results,
+figures and examples remain in the [pilot report](reports/experiment-report.md).
+To reproduce the short matrix into separate fresh directories:
 
 ```bash
-petseg demo --checkpoint runs/accuracy/selected.pt
-petseg predict /path/to/pet.jpg --checkpoint runs/accuracy/selected.pt --output outputs/pet
+python scripts/run_experiments.py --config-dir configs/pilot --runs-root runs/pilot-matrix --report-root reports/generated/pilot-matrix --device cpu
 ```
 
-![Original, pilot and selected cutout](assets/accuracy/example-comparison.png)
-
-The example uses held-out validation photo `Abyssinian_10`. The selected model
-removes the pilot's detached floor patch; fine hair remains approximate. The
-selected PNG was downloaded through the browser and verified at the original
-375×500 dimensions with transparency. See [demo proof](assets/accuracy/demo-screenshot.jpg)
-and [attribution](assets/README.md). The original pilot checkpoint and assets
-remain available for comparison.
-
-For a separately trained full-study checkpoint:
-
-```bash
-petseg predict /path/to/pet.jpg --checkpoint runs/pretrained-combined/best.pt --output outputs/pet
-petseg demo --checkpoint runs/pretrained-combined/best.pt
-```
-
-Open [the local demo](http://127.0.0.1:7860). Upload a photograph, choose a threshold
-and click **Remove background**. Original, probability heatmap, binary mask and
-cutout appear side by side, with model version, threshold and inference time.
-Download the PNG cutout, binary mask, 16-bit probability PNG or raw `.npy` array.
-The server binds to localhost and does not create a public sharing link.
-
-CLI output: `probability.npy` (float32 [0,1]), `probability.png` (16-bit),
-`heatmap.png`, `mask.png` (8-bit 0/255), `cutout.png` (RGBA, binary alpha), and
-`prediction.json` (model version/threshold/time). Predictions preserve aspect
-ratio and restore the EXIF-oriented original dimensions. JPEG, PNG, WebP, BMP and
-single-frame TIFF are supported; invalid/tiny/over-40-megapixel inputs fail clearly.
+The six full-length configs remain under `configs/`; loss choices are BCE, Dice
+and their equally weighted combination. All three exclude ignored pixels.
 
 ## Regenerate results and inspect errors
 
-Rebuild the new table, distributions, paired bootstrap and breed comparison from
-small committed snapshots (no weights or dataset needed):
+Rebuild the final table, distribution figure, paired bootstrap and breed comparison
+from small committed metric snapshots, without weights or the dataset:
 
 ```bash
 python scripts/compare_accuracy.py reports/accuracy/pilot-native reports/accuracy/selected-native --output outputs/accuracy-report
 ```
 
-See [accuracy evidence](reports/accuracy/README.md) for full prediction regeneration
-and timing commands. Full arrays are kept under ignored `reports/generated/accuracy/`.
-
-Evaluation stores compressed probabilities, targets, valid masks and resized
-images per test ID under `predictions/`. Regenerate without model or dataset:
+Full saved probabilities, targets, valid masks and images are under the ignored
+`reports/generated/accuracy/` directories on the original project machine. With
+those arrays present, recompute pixel metrics without loading weights or the dataset:
 
 ```bash
-petseg report reports/generated/ellipse reports/generated/scratch-combined reports/generated/pretrained-combined --regenerate
-petseg gallery reports/generated/scratch-combined
-# A newline-delimited manifest can select identical curated IDs for every model:
-petseg gallery reports/generated/scratch-combined --ids reports/gallery-ids.txt
+petseg report reports/generated/accuracy/pilot-native reports/generated/accuracy/selected-native --regenerate --output outputs/regenerated-accuracy/results.md
+petseg gallery reports/generated/accuracy/selected-native --ids reports/gallery-ids.txt
 ```
 
-The selected model has [20 matched reviewed examples](reports/accuracy/selected-native/gallery.html)
-and [per-example pilot comparisons](reports/accuracy/reviewed-comparison.csv).
-The pilot has [20 reviewed examples](reports/pilot/pretrained-combined/gallery.html)
-with [annotation/category notes](reports/gallery-review.csv). Open the evaluation's `gallery.html`. Its initial gallery is the 20 worst IoUs;
-fill `gallery_tags.csv`, then curate examples to cover fur, tails, multiple pets,
-similar-colored backgrounds, small pets and motion blur. Review whether all
-animals are annotated before calling multi-pet differences model failures.
-Keep small reviewed/attributed examples in `assets/`; large generated artifacts
-stay ignored. [The report](reports/experiment-report.md) describes remaining review.
+Do not run `--regenerate` on the small committed snapshots; they contain metric
+CSVs and selected panels, rather than full probability arrays. The selected model's
+[20 reviewed examples](reports/accuracy/selected-native/gallery.html) cover fur,
+tails, multiple animals, similar backgrounds, small pets and possible motion blur.
+[Per-example comparisons](reports/accuracy/reviewed-comparison.csv) record gains,
+regressions and annotation coverage. Download/open `gallery.html` locally to view
+its panels; GitHub displays HTML as source.
+
+The selected model improved IoU on **3,491 images**, tied eight and worsened on
+**170**. Small-pet mean IoU rose from **0.7362 to 0.9496**, but failures remain:
+`chihuahua_82` loses much of its body and `pomeranian_93` retains framed background.
+The [full report](reports/accuracy-improvement.md) discusses these cases, paired
+uncertainty, score distributions and the speed/quality tradeoff.
 
 ## Architecture
 
-All conv blocks are two padded 3×3 convolutions with GroupNorm and ReLU. The scratch
-encoder has channels **32, 64, 128, 256, 512**, max pooling by 2 between levels;
-bilinear upsampling concatenates skip features and halves channels on the way up.
-A 1×1 head returns logits. GroupNorm permits small batches. Skip-target resizing
-handles odd spatial dimensions without a crop or loss of output pixels.
+The handwritten convolution blocks contain two padded 3×3 convolutions with
+GroupNorm and ReLU. The scratch encoder has channels **32, 64, 128, 256, 512**, with
+max pooling by 2 between levels. Bilinear upsampling concatenates skip features;
+a 1×1 head returns logits. The torchvision ResNet18 encoder retains its own
+BatchNorm layers; its decoder and additional full-resolution skip are implemented
+here. Skip-target resizing supports odd spatial dimensions.
 
 | Stage (256×256 RGB input) | Scratch | ResNet18 encoder variant |
 |---|---|---|
@@ -238,29 +282,30 @@ handles odd spatial dimensions without a crop or loss of output pixels.
 | Decoder channels | 256, 128, 64, 32 | 256, 128, 64, 32, 32 |
 | Output | 1 × 256 × 256 logits | 1 × 256 × 256 logits |
 
-The ResNet18 encoder comes from torchvision; the decoder is implemented here.
-It is initialized with `ResNet18_Weights.IMAGENET1K_V1`; no pretrained segmentation
-head is used. Default parameter counts are **7,849,601** (scratch) and **14,359,105** (ResNet18 U-Net), also recorded by the evaluator. A sigmoid creates
-probabilities. Masked BCE and smoothed per-image soft Dice support empty
-foreground and all-ignored masks. Combined loss averages them equally.
+Default parameter counts are **7,849,601** for scratch and **14,359,105** for
+ResNet18 U-Net. The encoder starts from `ResNet18_Weights.IMAGENET1K_V1`; no
+pretrained segmentation head is used. Both variants use the same training-derived
+normalization. Masked BCE and smoothed per-image Dice handle empty foreground and
+all-ignored masks. A sigmoid produces probabilities.
 
 ## Limits and licensing
 
-**Images without a pet may produce false positives.** Training covers the Oxford
-cats/dogs distribution, not general salient objects. Binary alpha does not model
-translucent fur; thin tails, similar backgrounds, small subjects and motion blur
-need visual review. Multiple visible animals may not all be annotated. Border
-exclusion makes reported region accuracy more forgiving than fine cutout quality.
-Threshold adjustment in the demo is not evidence of a better held-out score.
+**Images without a pet may produce false positives.** Training covers Oxford
+cats/dogs rather than general salient objects. Binary alpha does not recover
+translucent fur. Ignored trimap contours make region scores more forgiving than
+fine cutout quality; a perfect region IoU does not establish perfect hair edges.
+Boundary F1 is reported separately at two pixels on the evaluation grid (original
+pixels for the final study); ignored neighborhoods limit its contour coverage.
+Multiple visible animals may not all be annotated. Demo threshold adjustment is
+for individual cutouts and does not establish a better benchmark score.
 
-Code: [MIT](LICENSE). Dataset and derived pet examples: see [DATA.md](DATA.md).
-No weights have been published; the commands above reproduce training. If weights
-are released, record an immutable URL, SHA-256, associated config and split hash
-before claiming a downloadable pretrained background-removal tool.
+The review found seven all-background test masks despite visible pets and one
+apparently inverted mask. **All remain in the reported 3,669-image scores**; see
+[annotation review](reports/accuracy/annotation-review.csv). Test results are
+reporting evidence and must not guide further threshold/model tuning. The measured
+improvement over the pilot does not establish an accuracy ceiling or training-seed
+stability.
 
-The reviewed test annotations include seven all-background masks despite visible
-pets and one apparently inverted mask. All remain in the reported scores; see
-[annotation review](reports/accuracy/annotation-review.csv). The selected model
-still regresses on 170 images, including a missing Chihuahua body and retained
-Pomeranian background. The [accuracy report](reports/accuracy-improvement.md)
-records these failures, ignored-border caveats and the speed/quality tradeoff.
+Code: [MIT](LICENSE). Dataset and derived pet examples: [DATA.md](DATA.md) and
+[asset attribution](assets/README.md). Weights remain local and unpublished; any
+future distribution should identify the exact checkpoint, config and split contract.

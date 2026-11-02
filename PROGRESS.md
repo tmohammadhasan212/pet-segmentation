@@ -82,3 +82,13 @@ not a proven accuracy ceiling or a newly blinded generalization estimate.
 
 No further training is needed to finish this study. Read `NEXT_SESSION.md` before
 future continuation; preserve the selected model, source checkpoints and manifests.
+
+## README publication review — 2026-11-03
+
+The README was reviewed after the GitHub push. Removed the obsolete claim that
+resume was unimplemented, updated the main workflow to the completed native-grid
+study, documented checkpoint availability for fresh clones, and labeled the
+historical 128px pilot separately. The main cat figure now shows original/current
+selected-model output only, freshly regenerated and verified pixel-for-pixel
+against the selected-model browser PNG. New example assets and provenance are
+under `assets/accuracy/readme-cat-*`; the historical comparison is preserved.
