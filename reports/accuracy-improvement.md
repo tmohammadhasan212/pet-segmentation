@@ -1,9 +1,11 @@
 # Accuracy improvement study
 
-**Paused 2026-11-01 at the user's request:** 14 completed 256px epochs; best
-validation IoU 0.95617. Epoch fifteen was interrupted. No new-model test results
-exist yet. See [the saved progress report](../PROGRESS.md) and
-[resume instructions](../NEXT_SESSION.md).
+**Resumed 2026-11-02:** proper optimizer/scheduler continuation is implemented
+and tested (33 tests). The preserved epoch-14 best/last checkpoints and logs are
+copied under `runs/accuracy/finetune-256/paused-epoch-14/`. The legacy checkpoint
+lacks RNG state, so exact random-sequence continuity across that pause cannot be
+claimed. New checkpoints embed history and Python/NumPy/Torch/accelerator/loader
+RNG states, allowing recovery even if the separate history JSON write is interrupted.
 
 The starting checkpoint is the one-epoch, 128px pretrained-combined pilot.
 Its published input-grid test IoU is 0.8402. The original official test has already
@@ -36,7 +38,7 @@ best/last weights live under the ignored `runs/accuracy/` directory.
 ## Reproducible commands
 
 ```bash
-petseg train --config configs/accuracy/finetune-256.yaml --output runs/accuracy/finetune-256
+petseg train --config configs/accuracy/finetune-256.yaml --output runs/accuracy/finetune-256 --resume
 petseg train --config configs/accuracy/refine-384.yaml --output runs/accuracy/refine-384
 petseg calibrate --checkpoint runs/accuracy/finetune-256/best.pt --sizes 256 384 512 --device mps --output runs/accuracy/finetune-256/calibration.json --export runs/accuracy/finetune-256/calibrated.pt
 petseg calibrate --checkpoint runs/accuracy/refine-384/best.pt --sizes 256 384 512 --device mps --output runs/accuracy/refine-384/calibration.json --export runs/accuracy/refine-384/calibrated.pt

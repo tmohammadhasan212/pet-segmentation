@@ -154,3 +154,63 @@ def test_native_evaluation_and_validation_calibration(trained, tmp_path):
     assert result["cutout"].size == (173, 81)
     with pytest.raises(ValueError, match="existing"):
         calibrate(checkpoint, tmp_path / "calibration.json", exported, [64], "cpu")
+
+
+def test_resume_matches_uninterrupted_training(pets, tmp_path, monkeypatch):
+    import torch
+    import petseg.training as training
+
+    root, manifests = pets
+    prepare(root, manifests)
+    config = dict(
+        model="scratch",
+        loss="combined",
+        base_channels=8,
+        data_root=str(root),
+        manifests=str(manifests),
+        size=64,
+        seed=42,
+        batch_size=2,
+        epochs=3,
+        patience=3,
+        optimizer="adamw",
+        lr=0.001,
+        scheduler="plateau",
+        lr_patience=0,
+        augment=True,
+        device="cpu",
+        amp=False,
+    )
+    path = tmp_path / "resume.yaml"
+    path.write_text(yaml.safe_dump(config))
+    uninterrupted = tmp_path / "uninterrupted"
+    training.train(path, uninterrupted)
+    interrupted = tmp_path / "interrupted"
+    original = training.save_checkpoint
+
+    def stop_after_epoch(path, payload):
+        original(path, payload)
+        if path.name == "last.pt" and payload["epoch"] == 1:
+            raise KeyboardInterrupt
+
+    with monkeypatch.context() as patch:
+        patch.setattr(training, "save_checkpoint", stop_after_epoch)
+        with pytest.raises(KeyboardInterrupt):
+            training.train(path, interrupted)
+    # last.pt's embedded history recovers even if the JSON update was interrupted.
+    training.train(path, interrupted, resume=True)
+    expected = torch.load(uninterrupted / "last.pt", weights_only=True)
+    actual = torch.load(interrupted / "last.pt", weights_only=True)
+    assert actual["history"] == expected["history"]
+    assert actual["scheduler"] == expected["scheduler"]
+    assert actual["epoch"] == 3
+    for key in expected["model"]:
+        assert torch.equal(actual["model"][key], expected["model"][key])
+    # Completed runs are idempotent, and changing learning settings is rejected.
+    before = training.file_hash(interrupted / "last.pt")
+    training.train(path, interrupted, resume=True)
+    assert training.file_hash(interrupted / "last.pt") == before
+    config["lr"] = 0.01
+    path.write_text(yaml.safe_dump(config))
+    with pytest.raises(ValueError, match="config differs"):
+        training.train(path, interrupted, resume=True)

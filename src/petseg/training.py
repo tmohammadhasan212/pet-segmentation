@@ -3,6 +3,7 @@ import json
 import math
 import os
 import random
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -74,6 +75,40 @@ def save_checkpoint(path, payload):
     os.replace(tmp, path)
 
 
+def save_json(path, value):
+    path = Path(path)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(value, indent=2))
+    os.replace(tmp, path)
+
+
+def rng_state(generator, device):
+    numpy_state = np.random.get_state()
+    state = {
+        "python": random.getstate(),
+        "numpy": [numpy_state[0], numpy_state[1].tolist(), *numpy_state[2:]],
+        "torch": torch.get_rng_state(),
+        "loader": generator.get_state(),
+    }
+    if device.type == "cuda":
+        state["cuda"] = torch.cuda.get_rng_state_all()
+    elif device.type == "mps":
+        state["mps"] = torch.mps.get_rng_state()
+    return state
+
+
+def restore_rng(state, generator, device):
+    random.setstate(state["python"])
+    ns = state["numpy"]
+    np.random.set_state((ns[0], np.array(ns[1], dtype=np.uint32), *ns[2:]))
+    torch.set_rng_state(state["torch"])
+    generator.set_state(state["loader"])
+    if device.type == "cuda" and "cuda" in state:
+        torch.cuda.set_rng_state_all(state["cuda"])
+    elif device.type == "mps" and "mps" in state:
+        torch.mps.set_rng_state(state["mps"])
+
+
 def initialize_model(config, fingerprint):
     """Warm-start weights only; each fine-tuning stage has its own optimizer/schedule."""
     source = config.get("init_checkpoint")
@@ -114,11 +149,11 @@ def parameter_groups(model, config):
     ]
 
 
-def train(config_path, output):
+def train(config_path, output, resume=False):
     config = load_config(config_path)
     torch.set_num_threads(config.get("threads", 4))
     output = Path(output)
-    if (output / "config.json").exists():
+    if not resume and (output / "config.json").exists():
         raise ValueError(
             "Run directory already exists; choose a fresh output directory"
         )
@@ -128,7 +163,25 @@ def train(config_path, output):
     fingerprint = validate_splits(config["data_root"], config["manifests"])
     stats = json.loads((Path(config["manifests"]) / "stats.json").read_text())
     device = device_for(config.get("device", "auto"))
-    model, initialization = initialize_model(config, fingerprint)
+    checkpoint = None
+    if resume:
+        checkpoint = torch.load(
+            output / "last.pt", map_location="cpu", weights_only=True
+        )
+        saved_config = json.loads((output / "config.json").read_text())
+        runtime = {"device", "threads", "workers"}
+        for previous in (saved_config, checkpoint["config"]):
+            if {k: v for k, v in previous.items() if k not in runtime} != {
+                k: v for k, v in config.items() if k not in runtime
+            }:
+                raise ValueError("Resume config differs from the saved training config")
+        if checkpoint["contract_hash"] != fingerprint or checkpoint["stats"] != stats:
+            raise ValueError("Resume split/statistics contract differs")
+        model = build_model(config, initialize=False)
+        model.load_state_dict(checkpoint["model"], strict=True)
+        initialization = checkpoint.get("initialization")
+    else:
+        model, initialization = initialize_model(config, fingerprint)
     model.to(device)
     sets = {
         split: PetDataset(
@@ -184,11 +237,51 @@ def train(config_path, output):
     amp = config.get("amp", True) and device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=amp)
     output.mkdir(parents=True, exist_ok=True)
-    (output / "config.json").write_text(json.dumps(config, indent=2))
-    (output / "audit.json").write_text(json.dumps(audit_result, indent=2))
-    best, stale = -math.inf, 0
+    best, stale, start = -math.inf, 0, 0
     history = []
-    for epoch in range(config["epochs"]):
+    if resume:
+        start = checkpoint["epoch"]
+        history = checkpoint.get("history")
+        if history is None:
+            history = json.loads((output / "history.json").read_text())
+        if [r["epoch"] for r in history] != list(range(1, start + 1)):
+            raise ValueError("Resume history does not match checkpoint epoch")
+        for row in history:
+            if row["val_iou"] > best:
+                best, stale = row["val_iou"], 0
+            else:
+                stale += 1
+        previous_best = torch.load(
+            output / "best.pt", map_location="cpu", weights_only=True
+        )
+        if (
+            previous_best["val_iou"] != best
+            or previous_best["contract_hash"] != fingerprint
+        ):
+            raise ValueError("Saved best checkpoint disagrees with resume history")
+        optimizer.load_state_dict(checkpoint["optimizer"])
+        if scheduler:
+            scheduler.load_state_dict(checkpoint["scheduler"])
+        scaler.load_state_dict(checkpoint["scaler"])
+        if checkpoint.get("rng_state"):
+            restore_rng(checkpoint["rng_state"], generator, device)
+        else:
+            warnings.warn(
+                "Legacy checkpoint has no RNG state; optimizer/schedule resume, "
+                "but bitwise random-sequence continuity is unavailable."
+            )
+        save_json(output / "history.json", history)
+        print(
+            f"Resuming epoch {start + 1}; best={best:.8f}; stale={stale}; "
+            f"learning_rates={[g['lr'] for g in optimizer.param_groups]}",
+            flush=True,
+        )
+    else:
+        save_json(output / "config.json", config)
+        save_json(output / "audit.json", audit_result)
+    if stale >= config["patience"]:
+        return output / "best.pt"
+    for epoch in range(start, config["epochs"]):
         sets["train"].epoch = epoch
         row = {
             "epoch": epoch + 1,
@@ -250,6 +343,7 @@ def train(config_path, output):
             best, stale = row["val_iou"], 0
         else:
             stale += 1
+        history.append(row)
         payload = {
             "model": model.state_dict(),
             "optimizer": optimizer.state_dict(),
@@ -263,12 +357,13 @@ def train(config_path, output):
             "threshold": 0.5,
             "version": "petseg-0.1.0",
             "initialization": initialization,
+            "history": history,
+            "rng_state": rng_state(generator, device),
         }
-        save_checkpoint(output / "last.pt", payload)
         if improved:
             save_checkpoint(output / "best.pt", payload)
-        history.append(row)
-        (output / "history.json").write_text(json.dumps(history, indent=2))
+        save_checkpoint(output / "last.pt", payload)
+        save_json(output / "history.json", history)
         print(json.dumps(row), flush=True)
         if stale >= config["patience"]:
             break

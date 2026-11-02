@@ -21,6 +21,7 @@ def main(argv=None):
     p = sub.add_parser("train")
     p.add_argument("--config", required=True)
     p.add_argument("--output", required=True)
+    p.add_argument("--resume", action="store_true", help="Continue output/last.pt")
     p = sub.add_parser("evaluate")
     p.add_argument("--checkpoint", help="Omit for central ellipse baseline")
     p.add_argument("--data-root", default="data/oxford-pets")
@@ -83,7 +84,7 @@ def main(argv=None):
     elif args.command == "train":
         from .training import train
 
-        print(train(args.config, args.output))
+        print(train(args.config, args.output, resume=args.resume))
     elif args.command == "evaluate":
         from .evaluation import evaluate
 
