@@ -1,3 +1,14 @@
+# Current continuation status — 2026-11-02
+
+The user resumed work. Resume support is complete and committed as `dace3ed`
+(33 passing tests), and the 256px run was launched with `--resume` from epoch 15.
+Before starting another process, check for an existing training job and inspect
+`runs/accuracy/finetune-256/training.log` and `history.json`. Do not run two jobs
+against the same output. The original epoch-14 checkpoints/logs are preserved at
+`runs/accuracy/finetune-256/paused-epoch-14/` with the hashes recorded below.
+Continue the study protocol after the 256px stage stops. The older notes below
+explain the original pause; the "first engineering task" is now complete.
+
 # Resume note for the next Codex session
 
 **User intent:** improve segmentation accuracy beyond the original one-epoch

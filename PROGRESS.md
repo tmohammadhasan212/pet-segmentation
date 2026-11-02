@@ -1,8 +1,11 @@
-# Progress report — paused 2026-11-01
+# Progress report — resumed 2026-11-02
 
-The user paused work before shutting down the system. **Training and the local
-demo have been stopped.** The accuracy-improvement task remains unfinished.
-Read [NEXT_SESSION.md](NEXT_SESSION.md) when continuing.
+The user resumed the accuracy study on 2026-11-02. Resume support is implemented
+and committed as `dace3ed`; all 33 tests pass. Training has been launched from
+logical epoch 15 with the saved optimizer/scheduler and original 30-epoch limit.
+See `runs/accuracy/finetune-256/training.log` for live progress. The demo remains
+stopped until final model selection. The historical pause state below is retained
+as evidence; untouched copies are under the ignored `paused-epoch-14/` run folder.
 
 ## Implemented and committed
 
@@ -60,10 +63,9 @@ new test score and must not be presented as directly comparable to the pilot's
 128px test metric. No new-model test evaluation has been performed.
 
 Saved checkpoint state includes model, optimizer, scheduler, scaler, epoch,
-config, normalization statistics and data contract. **The CLI does not yet
-implement true training resume**, and existing checkpoints do not store RNG or
-DataLoader generator state. This is the first issue to handle next session;
-simply rerunning `train` against the same output directory will be rejected.
+config, normalization statistics and data contract. **True resume is now implemented** via `train --resume`. Legacy epoch-14
+checkpoints lack RNG/loader state, so randomness across the old pause cannot be
+reproduced exactly; subsequent checkpoints save these states and embed history.
 
 The two checkpoint files are about 164 MiB each and remain on local disk across
 shutdown; they are not in Git. Their hashes and paths are recorded in
